@@ -1,5 +1,3 @@
--- Valve's pseudo-random functions ported directly to Lua :)
-
 local _R = debug.getregistry()
 
 random = {}
@@ -161,49 +159,3 @@ function random.RandomGaussianFloat( flMean, flStdDev )
 		return flStdDev * m_flRandomValue + flMean
 	end
 end
---[[
-function random.SeedFileLineHash( seedvalue, sharedname, additionalSeed )
-	return tonumber( util.CRC( ("%i%i%s"):format( seedvalue, additionalSeed, sharedname ) ) )
-end
-
-function _R.Entity:GetPredictionRandomSeed()
-	local seed = self:EntIndex()
-	
-	if self:IsPlayer() then
-		seed = bit.band( self:GetCurrentCommand():CommandNumber(), 0x7fffffff )
-	end
-	
-	return seed
-end
-
-function _R.Entity:SharedRandomInt( sharedname, flMinVal, flMaxVal, additionalSeed )
-	additionalSeed = additionalSeed or 0
-	local seed = random.SeedFileLineHash( self:GetPredictionRandomSeed(), sharedname, additionalSeed )
-	random.SetSeed( seed )
-	return random.RandomInt( flMinVal, flMaxVal )
-end
-
-function _R.Entity:SharedRandomFloat( sharedname, flMinVal, flMaxVal, additionalSeed )
-	additionalSeed = additionalSeed or 0
-	local seed = random.SeedFileLineHash( self:GetPredictionRandomSeed(), sharedname, additionalSeed )
-	random.SetSeed( seed )
-	return random.RandomFloat( flMinVal, flMaxVal )
-end
-]]
-random.SetSeed( os.time() ) -- Fix?
-
---[[for i=1,10 do
-    local heads = 0
-    local tails = 0
-    for j=1,100 do
-    	local r = random.RandomInt(1,2)
-    	if r == 1 then
-    		heads = heads + 1
-    	else
-    		tails = tails + 1
-    	end
-    end
-    print( "Trial " .. i )
-    print( "\tHeads = " .. heads )
-    print( "\tTails = " .. tails )
-end]]

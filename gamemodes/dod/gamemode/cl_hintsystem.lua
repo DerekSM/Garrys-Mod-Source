@@ -1,5 +1,5 @@
-local Player = FindMetaTable( "Player" )
+local _R = debug.getregistry() 
 
-function Player:HintMessage( enum )
-	-- notify
+function _R.Player:HintMessage( enum )
+	-- notify; running serverside seems to automatically network to this
 end

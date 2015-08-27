@@ -3,7 +3,7 @@ local _R = debug.getregistry()
 _R.Team = {}
 _R.Team.__index = _R.Team
 
--- Fix; find a way to set a metatable base
+-- Fix; find a way to set a metatable base to inherit correctly
 
 function GetGlobalTeam( iIndex )
 	if ( iIndex < 0 or iIndex >= GetNumberOfTeams() ) then
@@ -160,5 +160,5 @@ function _R.Team:AwardAchievement( iAchivement )
 	
 	net.Start( "AchivementEvent" )
 		net.WriteByte( iAchivement )
-	net.Send( filter ) -- Fix! Let's recieve this bitch
+	net.Send( filter ) -- Fix! Let's receive this in the correct place
 end

@@ -32,3 +32,5 @@ function _R.Player:ProcessMuzzleFlashEvent()
 	
 	// If we have an attachment, then stick a light on it
 	if ( cl_muzzleflash_dlight_3rd:GetBool() and pWeapon:GetAttachment( iMuzzleFlashAttachment )
+	end
+end

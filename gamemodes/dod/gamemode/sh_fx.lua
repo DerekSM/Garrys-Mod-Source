@@ -23,8 +23,6 @@ function fx.FireBullets( iPlayerIndex, vOrigin, vAngles, iWeaponIndex, iMode, iS
 	if ( not CLIENT ) then
 		// if this is server code, send the effect over to client as temp entity
 		// Dispatch one message for all the bullet impacts and sounds.
-		--TE_FireBullets( iPlayerIndex, vOrigin, vAngles, pWeapon, iMode, iSeed, flSpread ) -- Fix
-
 		bDoEffects = false // no effects on server
 
 		// Let the player remember the usercmd he fired a weapon on. Assists in making decisions about lag compensation.
@@ -38,7 +36,6 @@ function fx.FireBullets( iPlayerIndex, vOrigin, vAngles, iWeaponIndex, iMode, iS
 	end
 	
 	// Fire bullets, calculate impacts & effects
-	-- StartGroupingSounds() -- Fix
 
 	if ( not CLIENT ) then
 		// Move other players back to history positions based on local player's lag
@@ -141,6 +138,4 @@ function fx.FireBullets( iPlayerIndex, vOrigin, vAngles, iWeaponIndex, iMode, iS
 	if SERVER then
 		pPlayer:LagCompensation( false )
 	end
-	
-	--EndGroupingSounds()
 end
