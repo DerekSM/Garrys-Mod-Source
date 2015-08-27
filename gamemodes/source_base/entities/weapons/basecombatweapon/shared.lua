@@ -196,7 +196,7 @@ function SWEP:HasAmmo()
 	return ( self:Clip1() > 0 or player:GetAmmoCount( self.Primary.Ammo ) or self:Clip2() > 0 or player:GetAmmoCount( self.Secondary.Ammo ) )
 end
 
-function SWEP:VisibleInWeaponSelection
+function SWEP:VisibleInWeaponSelection()
 	return true
 end
 
