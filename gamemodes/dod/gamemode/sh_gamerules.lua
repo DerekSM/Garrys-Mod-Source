@@ -146,7 +146,7 @@ if ( SERVER ) then
 		self.m_iSpawnPointCount_Axis = 0
 		
 		self.m_vecPlayerPositions = {} -- Fix; do we need to declare 0 inside of there?
-		RunConsoleCommand( "exec " .. game.GetMap() .. ".cfg" ) -- Fix; string.format this shit up ( does this even work btw? )
+		RunConsoleCommand( "exec", game.GetMap() .. ".cfg" )
 		
 		self.m_pCurStateInfo = nil
 		self:State_Transition( STATE_PREGAME )

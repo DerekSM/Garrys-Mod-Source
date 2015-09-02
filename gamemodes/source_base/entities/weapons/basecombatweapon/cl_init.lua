@@ -1,3 +1,5 @@
+include( "shared.lua" )
+
 function SWEP:GetActiveWeapon()
 	local player = LocalPlayer()
 

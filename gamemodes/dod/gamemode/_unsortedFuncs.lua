@@ -11,3 +11,11 @@ end
 function swap( arg1, arg2 )
 	return arg2, arg1
 end
+
+function _R.Player:IsJumping() -- Fix; hook this into usercmds instead
+	return ( not self:IsOnGround() )
+end
+
+function _R.Player:SetNextAttack()
+	-- Placeholder to stop errors
+end

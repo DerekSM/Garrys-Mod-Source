@@ -174,7 +174,7 @@ function PassServerEntityFilter( pTouch, pPass ) -- Fix; no table. Just a plain 
 	elseif ( pEntTouch:GetOwner() == pEntPass ) then
 		return false
 	// don't clip against owner
-	if ( pEntPass:GetOwner() == pEntTouch ) then
+	elseif ( pEntPass:GetOwner() == pEntTouch ) then
 		return false
 	end
 	

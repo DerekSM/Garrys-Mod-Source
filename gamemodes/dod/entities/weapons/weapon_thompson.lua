@@ -1,3 +1,5 @@
+DEFINE_BASECLASS( "weapon_dodbasegun" )
+
 SWEP.Base = "weapon_dodbasegun"
 
 SWEP.DrawAmmo = true

@@ -1,3 +1,8 @@
+AddCSLuaFile( "cl_init.lua" )
+AddCSLuaFile( "shared.lua" )
+
+include( "shared.lua" )
+
 function SWEP:WeaponRangeAttack1Condition( flDot, flDist )
 	if ( self:UsesPrimaryAmmo() and not self:HasPrimaryAmmo() ) then
 		return COND_NO_PRIMARY_AMMO

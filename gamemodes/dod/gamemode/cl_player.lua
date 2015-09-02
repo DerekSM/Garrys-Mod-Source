@@ -31,6 +31,6 @@ function _R.Player:ProcessMuzzleFlashEvent()
 	local iEjectBrassAttachment = 2
 	
 	// If we have an attachment, then stick a light on it
-	if ( cl_muzzleflash_dlight_3rd:GetBool() and pWeapon:GetAttachment( iMuzzleFlashAttachment )
+	if ( cl_muzzleflash_dlight_3rd:GetBool() and pWeapon:GetAttachment( iMuzzleFlashAttachment ) ) then
 	end
 end

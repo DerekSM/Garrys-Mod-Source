@@ -35,16 +35,50 @@ SWEP.m_fMaxRange2 = 1024
 
 SWEP.m_bReloadsSingly = false
 
+EMPTY = 1
+SINGLE = 2
+SINGLE_NPC = 3
+WPN_DOUBLE = 4 // Can't be "DOUBLE" because windows.h uses it.
+DOUBLE_NPC = 5
+BURST = 6
+RELOAD = 7
+RELOAD_NPC = 8
+MELEE_MISS = 9
+MELEE_HIT = 10
+MELEE_HIT_WORLD = 11
+SPECIAL1 = 12
+SPECIAL2 = 13
+SPECIAL3 = 14
+
+SWEP.HoldType = "normal"
+
 SWEP.Primary =
 {
 	Ammo = -1,
-	ClipSize = -1,
+	ClipSize = -1
 }
 
 SWEP.Secondary =
 {
 	Ammo = -1,
-	ClipSize = -1,
+	ClipSize = -1
+}
+
+SWEP.ShootSounds = {
+	"", -- EMPTY
+	"", -- SINGLE
+	"", -- SINGLE_NPC
+	"", -- WPN_DOUBLE
+	"", -- DOUBLE_NPC
+	"", -- BURST
+	"", -- RELOAD
+	"", -- RELOAD_NPC
+	"", -- MELEE_MISS
+	"", -- MELEE_HIT
+	"", -- MELEE_HIT_WORLD
+	"", -- SPECIAL1
+	"", -- SPECIAL2,
+	"", -- SPECIAL3
 }
 
 function SWEP:Initialize()
@@ -77,13 +111,16 @@ function SWEP:Precache()
 	util.PrecacheModel( self.ViewModel )
 	util.PrecacheModel( self.WorldModel )
 	
-	for i = 0, NUM_SHOOT_SOUND_TYPES do -- Fix
-		local shootsound = self:GetShootSound( i )
-		util.PrecacheSound( shootsound )
+	for _, sound in ipairs( self.ShootSounds ) do
+		util.PrecacheSound( sound )
 	end
 end
 
-function SWEP:GetViewModel() -- Fix???????????????
+function SWEP:GetShootSound( iIndex )
+	return self.ShootSounds[ iIndex ]
+end
+
+function SWEP:GetViewModel()
 	return self.ViewModel
 end
 
@@ -310,6 +347,12 @@ void CBaseCombatWeapon::RescindReloadHudHint()
 }
 ]]
 
+if ( CLIENT ) then
+	function SWEP:FireAnimationEvent( origin, angles, event, options )
+		return false
+	end
+end
+
 function SWEP:SendViewModelAnim( nSequence )
 	if ( CLIENT ) then
 		if ( not self:GetPredictable() ) then
@@ -384,11 +427,11 @@ function SWEP:SetViewModel()
 	
 	vm:SetWeaponModel( self:GetViewModel() ) -- Fix; is this done by the engine?
 end
-
+--[[
 function SWEP:SendWeaponAnim( iActivity )
 	return self:SetIdealActivity( iActivity ) -- Fix? Is this needed?
 end
-
+]]--
 function SWEP:HasAnyAmmo()
 	// If I don't use ammo of any kind, I can always fire
 	if ( not self:UsesPrimaryAmmo() and not self:UsesSecondaryAmmo() ) then
@@ -525,7 +568,7 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 
 	// Weapons that don't autoswitch away when they run out of ammo 
 	// can still be deployed when they have no ammo.
-	if ( not self:HasAnyAmmo() and self;AllowsAutoSwtichFrom() ) then
+	if ( not self:HasAnyAmmo() and self:AllowsAutoSwtichFrom() ) then
 		return false
 	end
 	
@@ -575,17 +618,25 @@ function SWEP:GetDrawActivity()
 	return ACT_VM_DRAW
 end
 
+function SWEP:SetThinkFunction( func )
+	self.ThinkFunc = func
+end
+
+function SWEP:GetThinkFunction()
+	return self.ThinkFunc
+end
+
 function SWEP:Holster( pSwitchingTo )
 
 	// cancel any reload in progress.
 	self.m_bInReload = false
 	
 	// kill any think functions
-	self:SetThinkFunction() -- Fix; does this error like fuck?
+	--self:SetThinkFunction( function() end ) -- Fix; get lua exposure instead of a dumb hack
 	
 	// Send holster animation
 	self:SendWeaponAnim( ACT_VM_HOLSTER )
-	
+	--[[
 	// Some weapon's don't have holster anims yet, so detect that
 	local flSequenceDuration = 0
 	if ( self:GetActivity() == ACT_VM_HOLSTER ) then
@@ -614,7 +665,7 @@ function SWEP:Holster( pSwitchingTo )
 			self:RescindReloadHudHint()
 		end
 	end
-	
+	]]
 	return true
 end
 
@@ -638,7 +689,13 @@ function SWEP:HideThink()
 	end
 end
 
+function SWEP:ItemFrame()
+end
+
+SWEP.ThinkFunc = SWEP.ItemFrame
+
 function SWEP:Think() -- Fix
+	self.ThinkFunc()
 end
 
 -- Fix; ItemBusyFrame = PostThink. Find an implementation for this?
@@ -950,7 +1007,7 @@ function SWEP:PrimaryAttack()
 		return
 	end
 	
-	pPlayer:DoMuzzleFlash()
+	pPlayer:MuzzleFlash()
 	
 	self:SendWeaponAnim( self:GetPrimaryAttackActivity() )
 	
@@ -973,7 +1030,7 @@ function SWEP:PrimaryAttack()
 		self:WeaponSound( SINGLE, flNextPrimaryAttack )
 		self:SetNextPrimaryFire( flNextPrimaryAttack + fireRate )
 		info.Num = info.Num + 1
-		if ( not fireRate ) then
+		if ( fireRate == 0 ) then
 			break
 		end
 	end
@@ -1009,6 +1066,7 @@ function SWEP:PrimaryAttack()
 	
 	//Add our view kick in
 	self:AddViewKick()
+	
 end
 
 function SWEP:SecondaryAttack()
@@ -1060,14 +1118,14 @@ function SWEP:ActivityListCount()
 end
 
 function SWEP:ObjectCaps()
-	local caps = self:ObjectCaps() --self.BaseClass:ObjectCaps() -- Fix!
+	local caps = 0 -- self:ObjectCaps() --self.BaseClass:ObjectCaps() -- Fix!
 	if ( --not self:IsFollwingEntity() and -- fix 
 		not self:HasSpawnFlags( SF_WEAPON_NO_PLAYER_PICKUP ) ) then
 		caps = bit.bor( caps, FCAP_IMPULSE_USE )
 	end
 	
 	return caps
-end]]
+end
 
 function SWEP:Deploy()
 	return self:DefaultDeploy( self:GetDrawActivity(), self:GetAnimPrefix() )

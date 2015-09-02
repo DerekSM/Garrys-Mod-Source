@@ -1,3 +1,5 @@
+if ( CLIENT ) then return end
+
 local _R = debug.getregistry()
 
 function _R.Player:GetAttackSpread( pWeapon, pTarget )
@@ -7,7 +9,7 @@ function _R.Player:GetAttackSpread( pWeapon, pTarget )
 	
 	return VECTOR_CONE_15DEGREES
 end
-
+--[[
 function _R.Player:GetCurrentWeaponProficiency()
 	return self.m_CurrentWeaponProficiency
 end
@@ -15,7 +17,7 @@ end
 function _R.Player:SetCurrentWeaponProficiency( iProficiency )
 	self.m_CurrentWeaponProficiency = iProficiency
 end
-
+]]
 function _R.Player:CalcWeaponProficiency( pWeapon )
 	return WEAPON_PROFICIENCY_AVERAGE
 end

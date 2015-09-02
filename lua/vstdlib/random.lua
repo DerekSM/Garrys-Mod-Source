@@ -31,14 +31,14 @@ function random.GenerateRandomNumber()
 	local j = 0
 	local k = 0
 	
-	if ( m_idum <= 0 or not iy ) then
+	if ( idum <= 0 or not iy ) then
 		if ( -(idum) < 1 ) then
 			idum = 1
 		else
 			idum = -(idum)
 		end
 			
-		for ( j = NTAB + 7, 0, -1 ) do
+		for j = NTAB + 7, 0, -1 do
 			-- Have to round because k is predicted to be an int
 			k = math.floor( idum/IQ )
 			idum = IA * (idum - k * IQ) - IR * k
@@ -64,10 +64,10 @@ function random.GenerateRandomNumber()
 		error( "CUniformRandomStream had an array overrun: tried to write to element " .. j .. " of 0..31." )
 	end
 	
-	m_iy=m_iv[j]
-	m_iv[j] = m_idum
+	iy=iv[j]
+	iv[j] = idum
 
-	return m_iy
+	return iy
 end
 
 function random.RandomFloat( flLow, flHigh )
@@ -137,7 +137,7 @@ local flRandomValue = 0
 function random.RandomGaussianFloat( flMean, flStdDev )
 	local fac, rsq, v1, v2 = 0, 0, 0, 0
 
-	if ( not m_bHaveValue ) then
+	if ( not bHaveValue ) then
 		// Pick 2 random #s from -1 to 1
 		// Make sure they lie inside the unit circle. If they don't, try again
 		repeat
@@ -156,6 +156,6 @@ function random.RandomGaussianFloat( flMean, flStdDev )
 		return flStdDev * (v2 * fac) + flMean
 	else
 		bHaveValue = false
-		return flStdDev * m_flRandomValue + flMean
+		return flStdDev * flRandomValue + flMean
 	end
 end

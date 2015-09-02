@@ -31,13 +31,10 @@ BASEENTITY_MSG_REMOVE_DECALS  = 1
 //-----------------------------------------------------------------------------
 // For invalidate physics recursive
 //-----------------------------------------------------------------------------
-enum InvalidatePhysicsBits_t
-{
-	POSITION_CHANGED	= 0x1,
-	ANGLES_CHANGED		= 0x2,
-	VELOCITY_CHANGED	= 0x4,
-	ANIMATION_CHANGED	= 0x8,
-};
+POSITION_CHANGED	= 0x1
+ANGLES_CHANGED		= 0x2
+VELOCITY_CHANGED	= 0x4
+ANIMATION_CHANGED	= 0x8
 
 local _R = debug.getregistry()
 
@@ -102,7 +99,7 @@ function _R.Entity:SetPredictionRandomSeed( cmd )
 		return
 	end
 	
-	self.m_nPredictionRandomSeed = ( bit.band( md5.PseudoRandom( cmd:CommandNumber() ), 0x7fffffff ) )
+	self.m_nPredictionRandomSeed = bit.band( md5.PseudoRandom( cmd:CommandNumber() ), 0x7fffffff )
 end
 
 function _R.Entity:GetPredictionRandomSeed()
@@ -126,7 +123,7 @@ function _R.Entity:ImpactTrace( pTrace, iDamageType, pCustomImpactName )
 	data:SetSurfaceProp( pTrace.SurfaceProps )
 	data:SetDamageType( iDamageType )
 	data:SetHitBox( pTrace.HitBox )
-	data:SetEntIndex( pEntity:EntIndex()
+	data:SetEntIndex( pEntity:EntIndex() )
 	data:SetEntity( pEntity )
 	
 	// Send it on its way
@@ -269,7 +266,17 @@ function _R.Entity:MakeTracer( vecTracerSrc, tr, iTracerType )
 	end
 end
 
--- Fix; fix blood shit
+function _R.Entity:GetTracerAttachment()
+	local iAttachment = TRACER_DONT_USE_ATTACHMENT
+	
+	if ( game.MultiPlayer() ) then
+		iAttachment = 1
+	end
+	
+	return iAttachment
+end
+
+-- Fix; blood inheritance
 
 function _R.Entity:TraceBleed( flDamage, vecDir, ptr, bitsDamageType )
 	local bloodcolor = self:GetBloodColor()
@@ -278,7 +285,7 @@ function _R.Entity:TraceBleed( flDamage, vecDir, ptr, bitsDamageType )
 		return
 	end
 	
-	if ( not bit.band( bitsDamageType, bit.bor( DMG_CRUSH, DMG_BULLET, DMG_SLASH, DMG_BLAST, DMG_CLUB, DMG_AIRBOAT ) ) )
+	if ( not bit.band( bitsDamageType, bit.bor( DMG_CRUSH, DMG_BULLET, DMG_SLASH, DMG_BLAST, DMG_CLUB, DMG_AIRBOAT ) ) ) then
 		return
 	end
 	
@@ -314,7 +321,7 @@ function _R.Entity:TraceBleed( flDamage, vecDir, ptr, bitsDamageType )
 	local flTraceDist = bit.band( bitsDamageType, DMG_AIRBOAT ) and 384 or 172
 	
 	for i = 0, cCount do
-		-- FIX; AI_TraceLine?
+		-- FIX; hack up AI trace and Blood decal trace
 	end
 end
 
@@ -339,20 +346,34 @@ function _R.Entity:FollowEntity( pBaseEntity, bBoneMerge )
 	end
 end
 
+function _R.Entity:StopFollowingEntity()
+	assert( self:IsFollowingEntity(), "StopFollwingEntity called on non-parented ent: " .. tostring( self ) )
+	
+	self:SetParent( NULL )
+	self:RemoveEffects( EF_BONEMERGE )
+	self:RemoveSolidFlags( FSOLID_NOT_SOLID )
+	self:SetMoveType( MOVETYPE_NONE )
+end
+
 function _R.Entity:SetEffectEntity( pEffectEnt )
 	if ( self.m_hEffectEntity ~= pEffectEnt ) then
 		self.m_hEffectEntity = pEffectEnt
 	end
 end
 
+function _R.Entity:ClearEffects()
+	self:RemoveEffects( self:GetEffects() )
+end
+
+
 -- Fix; VPhysics shit
 
 -- We override this function to fix the longtime crash of ragdoll crashes with collision groups
-_R.Entity.OldSetCollisionGroup = _R.Entity.SetCollisionGroup -- Fix?
+_R.Entity._SetCollisionGroup = _R.Entity.SetCollisionGroup -- Fix?
 
 function _R.Entity:SetCollisionGroup( collisionGroup )
 	if ( self:GetCollisionGroup() ~= collisionGroup ) then
-		self:SetCollisionGroup( collisionGroup )
+		self:_SetCollisionGroup( collisionGroup )
 		self:CollisionRulesChanged() -- RecheckCollisionFilter is called internally by this
 	end
 end
@@ -360,40 +381,36 @@ end
 function _R.Entity:GetWaterType()
 	local out = 0
 	if ( bit.band( self.m_nWaterType, 1 ) ) then
-		out = CONTENTS_WATER -- Fix; bit library shit
+		out = bit.bor( out, CONTENTS_WATER )
 	end
 	
 	if ( bit.band( self.m_nWaterType, 2 ) ) then
-		out = CONTENTS_SLIME -- Fix!!
+		out = bit.bor( out, CONTENTS_SLIME )
 	end
+	
+	return out
 end
 
 function _R.Entity:SetWaterType( nType )
 	self.m_nWaterType = 0
 	
 	if ( bit.band( nType, CONTENTS_WATER ) ) then
-		self.m_nWaterType = 1 -- Fix; bit library shit
+		self.m_nWaterType = bit.bor( self.m_nWaterType, 1 )
 	end
 	
 	if ( bit.band( nType, CONTENTS_SLIME ) ) then
-		self.m_nWaterType = 2 -- Fix!!
+		self.m_nWaterType = bit.bor( self.m_nWaterType, 2 )
 	end
 end
 
--- usercmd shit, fix
---if SERVER then
-	hook.Add( "StartCommand", "RandomSeed", function( player, cmd )
-		player:SetPredictionRandomSeed( cmd )
-		-- Add more, fix
-	end )
-	--[[
-	hook.Add( "FinishMove", "RandomSeed", function( player )
-		player:SetPredictionRandomSeed()
-	end
-	]]
---end
-
---hook.Add( "
+hook.Add( "StartCommand", "RandomSeed", function( player, cmd )
+	player:SetPredictionRandomSeed( cmd )
+	-- Add more, fix
+end )
+	
+hook.Add( "FinishCommand", "RandomSeed", function( player )
+	player:SetPredictionRandomSeed( NULL )
+end )
 
 md5 = {}
 

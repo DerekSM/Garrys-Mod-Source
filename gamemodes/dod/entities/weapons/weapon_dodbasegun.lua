@@ -1,3 +1,5 @@
+DEFINE_BASECLASS( "weapon_dodbase" )
+
 SWEP.Base = "weapon_dodbase"
 -- SWEP.m_bFireOnEmpty = true
 

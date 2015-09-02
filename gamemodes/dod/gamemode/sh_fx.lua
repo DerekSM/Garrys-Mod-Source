@@ -8,8 +8,6 @@ function fx.FireBullets( iPlayerIndex, vOrigin, vAngles, iWeaponIndex, iMode, iS
 	
 	local pPlayer = ents.GetByIndex( iPlayerIndex )
 	
-	print( pPlayer:Nick() )
-	
 	local pWeaponInfo = ents.GetByIndex( iWeaponIndex )
 	
 	if ( CLIENT ) then
@@ -131,7 +129,7 @@ function fx.FireBullets( iPlayerIndex, vOrigin, vAngles, iWeaponIndex, iMode, iS
 			vecStart = vecStart + vecDirShooting * 150
 			util.Tracer( vecStart, tr.endpos, iEntIndex, TRACER_DONT_USE_ATTACHMENT, 5000.0, true, "FaintTracer" )
 		elseif ( iTracerType == 0 ) then	// pistols etc, just do the sound
-				fx.TracerSound( vecStart, tr.endpos, TRACER_TYPE_DEFAULT ) -- Fix
+			fx.TracerSound( vecStart, tr.endpos, TRACER_TYPE_DEFAULT ) -- Fix
 		end
 	end
 

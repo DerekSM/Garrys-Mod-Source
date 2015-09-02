@@ -1,3 +1,5 @@
+DEFINE_BASECLASS( "basecombatweapon" )
+
 SWEP.Base = "basecombatweapon"
 
 DOD_AMMO_SUBMG		= "DOD_AMMO_SUBMG"
@@ -169,6 +171,9 @@ WEAPON_MAX = 39		// number of weapons weapon index
 
 Primary_Mode = 0
 Secondary_Mode = 1
+
+NUM_MUZZLE_FLASH_TYPES = 4
+
 --[[
 function IsAmmoType( iAmmoType, pAmmoName )
 	return GetAmmoDef:Index( pAmmoName ) == iAmmoType -- Fix
@@ -486,14 +491,6 @@ end
 
 function SWEP:GetIdleActivity()
 	return ACT_VM_IDLE
-end
-
-function SWEP:GetViewModel()
-	if ( not IsValid( self.Owner ) ) then
-		return self.BaseClass:GetViewModel()
-	end
-	
-	return self:GetViewModel()
 end
 
 function SWEP:Precache()
@@ -1163,12 +1160,15 @@ if ( CLIENT ) then
 	
 	function SWEP:FireAnimationEvent( origin, angles, event, options )
 		local iOptions = tonumber( options )
+		local pViewModel = self.Owner:GetViewModel()
+		
+		if ( not IsValid( pViewModel ) ) then return end
 	
 		if ( event == 5001 ) then
 			if ( self:ShouldDrawMuzzleFlash() ) then
 				local data = EffectData()
 				data:SetFlags( iOptions ) -- Fix
-				data:SetEntity( self:GetViewModel() )
+				data:SetEntity( pViewModel )
 				data:SetAttachment( 1 )
 				
 				local iFlashType = ( iOptions % 10 ) % NUM_MUZZLE_FLASH_TYPES
@@ -1186,7 +1186,11 @@ if ( CLIENT ) then
 			local data = EffectData()
 			data:SetHitBox( iOptions )
 			data:SetEntity( IsValid( self.Owner ) and self.Owner )
-			-- pViewModel->GetAttachment( 2, data.m_vOrigin, data.m_vAngles ); -- Fix; why the fuck are we just getting the attachment out of the blue?
+			
+			local attachment = pViewModel:GetAttachment( 2 )
+			
+			data:SetOrigin( attachment.Pos )
+			data:SetAngles( attachment.Ang )
 			
 			util.Effect( "DOD_EjectBrass", data )
 			return true
