@@ -103,20 +103,20 @@ function SWEP:DoFireEffects()
 end
 
 function SWEP:Reload()
+	if ( self.m_bInReload ) then return false end
+	
 	local pPlayer = self.Owner
 	local iClip1 = self:Clip1()
-	
+	--[[
 	if ( pPlayer:GetAmmoCount( self:GetPrimaryAmmoType() ) <= 0 and iClip1 <= 0 ) then
 		pPlayer:HintMessage( HINT_AMMO_EXHAUSTED ) -- Fix; shared?
 		return false
-	end
+	end]]
 	
-	local iResult = self:DefaultReload( self:GetMaxClip1(), self:GetMaxClip2(), self:GetReloadActivity() )
+	local iResult = self:_DefaultReload( self:GetMaxClip1(), self:GetMaxClip2(), self:GetReloadActivity() )
 	if ( not iResult ) then
 		return false
 	end
-	
-	pPlayer:SetAnimation( PLAYER_RELOAD )
 	
 	return true
 end

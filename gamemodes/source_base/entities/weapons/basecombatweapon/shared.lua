@@ -819,6 +819,8 @@ function SWEP:WeaponSound( sound_type, soundtime )
 end
 
 function SWEP:DefaultReload( iClipSize1, iClipSize2, iActivity )
+	print( "run" )
+	
 	local pOwner = self.Owner
 	if ( not IsValid( pOwner ) ) then 
 		return false 

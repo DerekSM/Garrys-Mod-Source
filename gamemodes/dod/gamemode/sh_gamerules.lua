@@ -2193,7 +2193,7 @@ end
 
 if ( SERVER ) then -- Fix; why does the stupid gamerules file do this again?
 
-	function GM::GetChatPrefix( bTeamOnly, pPlayer ) -- Fix
+	function GM:GetChatPrefix( bTeamOnly, pPlayer ) -- Fix
 		local pszPrefix = ""
 		
 		if ( IsValid( pPlayer ) ) then 	// dedicated server output

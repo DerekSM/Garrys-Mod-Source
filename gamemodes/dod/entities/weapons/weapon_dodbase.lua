@@ -422,7 +422,6 @@ function SWEP:Think()
 	local iClip1 = self:Clip1()
 	
 	if ((self.m_bInReload) and (flNextAttack <= curtime)) then
-		
 		// complete the reload.
 		local j = math.min( self:GetMaxClip1() - iClip1, pPlayer:GetAmmoCount( self.Primary.Ammo ) )
 		
@@ -455,7 +454,7 @@ function SWEP:Think()
 		end
 	elseif ( pPlayer:KeyDown( IN_RELOAD ) and self:GetMaxClip1() ~= WEAPON_NOCLIP and not self.m_bInReload and flNextPrimaryAttack < curtime ) then
 		// reload when reload is pressed, or if no buttons are down and weapon is empty.
-		-- self:Reload()
+		self:Reload()
 	
 	elseif ( not ( pPlayer:KeyDown( IN_ATTACK ) or pPlayer:KeyDown( IN_ATTACK2 ) ) ) then
 		// no fire buttons down
@@ -578,7 +577,7 @@ function SWEP:Holster( pSwitchingTo )
 	
 	self.m_bInReload = false
 	
-	self:SetSmackTime( -1 )
+	--self:SetSmackTime( -1 )
 	
 	return self.BaseClass:Holster( pSwitchingTo )
 end
@@ -793,7 +792,7 @@ else
 #endif]]
 end
 
-function SWEP:DefaultReload( iClipSize1, iClipSize2, iActivity )
+function SWEP:_DefaultReload( iClipSize1, iClipSize2, iActivity )
 	local pOwner = self.Owner
 	if ( not IsValid( pOwner ) ) then
 		return false

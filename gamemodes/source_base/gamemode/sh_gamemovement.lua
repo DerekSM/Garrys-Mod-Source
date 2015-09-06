@@ -9,7 +9,7 @@ function _R.Player:GetMins()
 		return VEC_OBS_HULL_MIN
 	end
 	
-	return self:Crouching() and VEC_DUCK_HULL_MIN or VEC_HULL MIN
+	return self:Crouching() and VEC_DUCK_HULL_MIN or VEC_HULL_MIN
 end
 
 function _R.Player:GetMaxs()
@@ -17,7 +17,7 @@ function _R.Player:GetMaxs()
 		return VEC_OBS_HULL_MAX
 	end
 	
-	return self:Crouching() and VEC_DUCK_HULL_MAX or VEC_HULL MAX
+	return self:Crouching() and VEC_DUCK_HULL_MAX or VEC_HULL_MAX
 end
 
 function _R.Player:GetViewOffset()

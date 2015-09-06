@@ -6,7 +6,7 @@ SWEP.DrawAmmo = true
 
 SWEP.CrosshairMinDistance = 8
 SWEP.CrosshairDeltaDistance = 3
-SWEP.MuzzleFlashType = 0
+SWEP.MuzzleFlashType = 1
 SWEP.MuzzleFlashScale = 0.3
 SWEP.ViewModelFOV = 45
 SWEP.vm_normal_offset = Vector( 1.5, -.4, .32 )
@@ -31,8 +31,8 @@ SWEP.bucket = 0
 SWEP.bucket_position = 1
 
 SWEP.Primary = {
-	Ammo = DOD_AMMO_SUBMG,
-	ClipSize = 999,
+	Ammo = "DOD_AMMO_SUBMG",
+	ClipSize = 30,
 	DefaultClip = 210, -- Fix? DefaultAmmoClips = 7; 30*7. Should it be *6?
 	Automatic = true
 }
@@ -58,11 +58,11 @@ SWEP.WorldModel = "models/weapons/w_thompson.mdl"
 SWEP.anim_prefix = "tommy"
 
 // Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
-SWEP.SoundData = {
-	single_shot = "Weapon_Thompson.Shoot",
-	reload = "Weapon_Thompson.WorldReload",
-	melee_hit = "Weapon_Punch.HitPlayer",
-	melee_hit_world = "Weapon_Punch.HitWorld"
+SWEP.ShootSounds = {
+	[ SINGLE ] = "Weapon_Thompson.Shoot",
+	[ RELOAD ] = "Weapon_Thompson.WorldReload",
+	[ MELEE_HIT ] = "Weapon_Punch.HitPlayer",
+	[ MELEE_HIT_WORLD ] = "Weapon_Punch.HitWorld"
 }
 
 // Weapon Sprite data is loaded by the Client DLL.
