@@ -2,6 +2,11 @@ DEFINE_BASECLASS( "basecombatweapon" )
 
 SWEP.Base = "basecombatweapon"
 
+MELEE_DMG_SECONDARYATTACK	= bit.lshift( 1, 0 )
+MELEE_DMG_FIST				= bit.lshift( 1, 1 )
+MELEE_DMG_EDGE				= bit.lshift( 1, 2 )
+MELEE_DMG_STRONGATTACK		= bit.lshift( 1, 3 )
+
 DOD_AMMO_SUBMG		= "DOD_AMMO_SUBMG"
 DOD_AMMO_ROCKET		= "DOD_AMMO_ROCKET"
 DOD_AMMO_COLT		= "DOD_AMMO_COLT"
@@ -31,6 +36,8 @@ DOD_AMMO_RIFLEGRENADE_US		= "DOD_AMMO_RIFLEGRENADE_US"
 DOD_AMMO_RIFLEGRENADE_GER		= "DOD_AMMO_RIFLEGRENADE_GER"
 DOD_AMMO_RIFLEGRENADE_US_LIVE	= "DOD_AMMO_RIFLEGRENADE_US_LIVE"
 DOD_AMMO_RIFLEGRENADE_GER_LIVE	= "DOD_AMMO_RIFLEGRENADE_GER_LIVE"
+
+CreateConVar( "friendlyfire", "0" )
 
 CROSSHAIR_CONTRACT_PIXELS_PER_SECOND = 7.0
 
@@ -187,6 +194,9 @@ function WeaponIDToAlias( id ) -- Fix; is this needed?
 	return s_WeaponAliasInfo[ id ]
 end
 ]]
+
+SWEP.m_iSmackDamageType = 0
+
 SWEP.ID = WEAPON_NONE
 SWEP.StatsID = WEAPON_NONE
 SWEP.AltID = WEAPON_NONE
@@ -318,10 +328,6 @@ function SWEP:GetMeleeActivity()
 	return ACT_VM_SECONDARYATTACK
 end
 
-function SWEP:GetStrongMeleeActivity()
-	return ACT_VM_SECONDARYATTACK
-end
-
 local head_hull_mins = Vector( -16, -16, -18 )
 local head_hull_maxs = Vector( 16, 16, 18 )
 
@@ -405,12 +411,12 @@ end
 function SWEP:Think()
 	local flSmackTime = self:GetSmackTime()
 	local curtime = CurTime()
-	
+	--[[
 	if ( flSmackTime > 0 and curtime > flSmackTime ) then
 		self:Smack()
 		self:SetSmackTime( -1 )
 	end
-	
+	]]
 	local pPlayer = self.Owner
 	
 	if ( not IsValid( pPlayer ) ) then return end
@@ -918,12 +924,10 @@ function SWEP:MeleeAttack( iDamageAmount, iDamageType, flDmgDelay, flAttackDelay
 
 	local iTraceMask = bit.bor( MASK_SOLID, CONTENTS_HITBOX, CONTENTS_DEBRIS )
 
-	local tr 
-	util.TraceLine( {
+	local tr = util.TraceLine( {
 		start = vecSrc,
 		endpos = vecEnd,
-		mask = iTraceMask,
-		output = tr
+		mask = iTraceMask
 	} )
 
 	local rayExtension = 40.0
@@ -991,8 +995,9 @@ function SWEP:MeleeAttack( iDamageAmount, iDamageType, flDmgDelay, flAttackDelay
 
 	// player animation
 	pPlayer:DoAnimationEvent( PLAYERANIMEVENT_ATTACK_SECONDARY ) -- Fix; originally PLAYERANIMEVENT_SECONDARY_ATTACK
-
-	selt:SetNextPrimaryFire( CurTime() + flAttackDelay )
+	
+	-- Fix; should we SetNextAttack here?
+	self:SetNextPrimaryFire( CurTime() + flAttackDelay )
 	self:SetNextSecondaryFire( CurTime() + flAttackDelay )
 	self:SetWeaponIdleTime( CurTime() + self:SequenceDuration() )
 	
@@ -1024,30 +1029,27 @@ function SWEP:Smack()
 
 	local iTraceMask = bit.bor( MASK_SOLID, CONTENTS_HITBOX, CONTENTS_DEBRIS )
 
-	local tr 
-	util.TraceLine( {
+	local tr = util.TraceLine( {
 		start = vecSrc,
 		endpos = vecEnd,
-		mask = iTraceMask,
-		output = tr
+		mask = iTraceMask
 	} )
 
 	local rayExtension = 40.0
-	local tr = util.ClipTraceToPlayers( vecSrc, vecEnd + vForward * rayExtension, iTraceMask, filter, tr )
+	tr = util.ClipTraceToPlayers( vecSrc, vecEnd + vForward * rayExtension, iTraceMask, filter, tr )
 
 	// If the exact forward trace did not hit, try a larger swept box 
 	if ( tr.Fraction >= 1.0 ) then
 		local head_hull_mins = Vector( -16, -16, -18 )
 		local head_hull_maxs = Vector( 16, 16, 18 )
 		
-		util.TraceHull( {
+		tr = util.TraceHull( {
 			start = vecSrc,
 			endpos = vecEnd,
 			maxs = head_hull_maxs,
 			mins = head_hull_mins,
 			filter = filter,
 			mask = MASK_SOLID,
-			output = tr
 		} )
 		
 		if ( tr.Fraction < 1.0 ) then
@@ -1104,7 +1106,7 @@ function SWEP:Smack()
 		
 		local vecForceDir = vForward
 		
-		local info = self:CalculateMeleeDamageForce( info, vecForceDir, tr.endpos, flScale )
+		local info = CalculateMeleeDamageForce( info, vecForceDir, tr.HitPos, flScale )
 		
 		if ( tr.Entity == pPlayer ) then return end
 		
@@ -1115,20 +1117,20 @@ function SWEP:Smack()
 	end
 	
 	local data = EffectData()
-	data:SetOrigin( self.m_trHit.endpos )
-	data:SetStart( self.m_trHit.start )
-	data:SetSurfaceProp( self.m_trHit.SurfaceProps )
-	data:SetHitBox( self.m_trHit.HitBox )
+	data:SetOrigin( tr.HitPos )
+	data:SetStart( tr.StartPos )
+	data:SetSurfaceProp( tr.SurfaceProps )
+	data:SetHitBox( tr.HitBox )
 	
 	if ( CLIENT ) then
-		data:SetEntity( self.m_trHit.Entity )
+		data:SetEntity( tr.Entity )
 	else
-		data:SetEntIndex( self.m_trHit.Entity:EntIndex() )
+		data:SetEntIndex( tr.Entity:EntIndex() )
 	end	
 	
 	if ( not CLIENT ) then -- Fix fix fix; we are using a recipient filter for DispatchEffect, however, it's only serverside. Is it networked?
 		local effectfilter = RecipientFilter()
-		effectfilter:AddPAS( self.m_trHit.endpos )
+		effectfilter:AddPAS( tr.HitPos )
 		effectfilter:RemovePlayer( pPlayer )
 	end
 	
@@ -1136,16 +1138,16 @@ function SWEP:Smack()
 	data:SetFlags( 0x1 )	//IMPACT_NODECAL
 	data:SetDamageType( iDamageType )
 	
-	local bHitPlayer = IsValid( self.m_trHit.Entity ) and self.m_trHit.Entity:IsPlayer()
+	local bHitPlayer = IsValid( tr.Entity ) and tr.Entity:IsPlayer()
 	
 	// don't do any impacts if we hit a teammate and ff it off
-	if ( bHitPlayer and self.m_trHit.Entity:Team() == pPlayer:Team() and not GetConVar( "friendlyfire" ):GetBool() ) then
+	if ( bHitPlayer and tr.Entity:Team() == pPlayer:Team() and not GetConVar( "friendlyfire" ):GetBool() ) then
 		return
 	end
 	
-	if ( bHitPlayer ) then
+	if ( bHitPlayer and SERVER ) then -- Temp fix; running serverside for recipientfilter
 		util.Effect( "Impact", data, true, effectfilter )
-	elseif ( bit.band( self.m_iSmackDamageType, MELEE_DMG_EDGE ) ) then
+	elseif ( bit.band( self.m_iSmackDamageType, MELEE_DMG_EDGE ) and SERVER ) then
 		data:SetDamageType( DMG_SLASH )
 		util.Effect( "KnifeSlash", data, true, effectfilter )
 	end

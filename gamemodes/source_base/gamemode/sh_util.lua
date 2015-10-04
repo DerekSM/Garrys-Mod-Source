@@ -91,70 +91,72 @@ function util.YawToVector( yaw )
 	
 	return ret
 end
---[[
-static int SeedFileLineHash( int seedvalue, const char *sharedname, int additionalSeed )
-{
-	CRC32_t retval;
 
-	CRC32_Init( &retval );
-
-	CRC32_ProcessBuffer( &retval, (void *)&seedvalue, sizeof( int ) );
-	CRC32_ProcessBuffer( &retval, (void *)&additionalSeed, sizeof( int ) );
-	CRC32_ProcessBuffer( &retval, (void *)sharedname, Q_strlen( sharedname ) );
+function _R.Entity:GetPredictionRandomSeed() -- Fix; overwrite Player commandnum
+	local seed = self:EntIndex()
 	
-	CRC32_Final( &retval );
+	if self:IsPlayer() then
+		seed = bit.band( self:GetCurrentCommand():CommandNumber(), 255 )
+	end
+	
+	return seed
+end
 
-	return (int)( retval );
-}
+function random.SeedFileLineHash( seedvalue, sharedname, additionalSeed )
+	return tonumber( util.CRC( ("%i%i%s"):format( seedvalue, additionalSeed, sharedname ) ) )
+end
 
-float SharedRandomFloat( const char *sharedname, float flMinVal, float flMaxVal, int additionalSeed /*=0*/ )
-{
-	Assert( CBaseEntity::GetPredictionRandomSeed() != -1 );
+function _R.Entity:SharedRandomFloat( sharedname, flMinVal, flMaxVal, additionalSeed )
+	local iSeed = self:GetPredictionRandomSeed()
+	assert( iSeed ~= 1 )
+	
+	additionalSeed = additionalSeed or 0
+	local seed = random.SeedFileLineHash( iSeed, sharedname, additionalSeed )
+	random.SetSeed( seed )
+	return random.RandomFloat( flMinVal, flMaxVal )
+end
 
-	int seed = SeedFileLineHash( CBaseEntity::GetPredictionRandomSeed(), sharedname, additionalSeed );
-	RandomSeed( seed );
-	return RandomFloat( flMinVal, flMaxVal );
-}
+function _R.Entity:SharedRandomInt( sharedname, iMinVal, iMaxVal, additionalSeed )
+	local iSeed = self:GetPredictionRandomSeed()
+	assert( iSeed ~= 1 )
+	
+	additionalSeed = additionalSeed or 0
+	local seed = random.SeedFileLineHash( iSeed, sharedname, additionalSeed )
+	random.SetSeed( seed )
+	return random.RandomInt( iMinVal, iMaxVal )
+end
 
-int SharedRandomInt( const char *sharedname, int iMinVal, int iMaxVal, int additionalSeed /*=0*/ )
-{
-	Assert( CBaseEntity::GetPredictionRandomSeed() != -1 );
-
-	int seed = SeedFileLineHash( CBaseEntity::GetPredictionRandomSeed(), sharedname, additionalSeed );
-	RandomSeed( seed );
-	return RandomInt( iMinVal, iMaxVal );
-}
-
-Vector SharedRandomVector( const char *sharedname, float minVal, float maxVal, int additionalSeed /*=0*/ )
-{
-	Assert( CBaseEntity::GetPredictionRandomSeed() != -1 );
-
-	int seed = SeedFileLineHash( CBaseEntity::GetPredictionRandomSeed(), sharedname, additionalSeed );
-	RandomSeed( seed );
+function _R.Entity:SharedRandomVector( sharedname, minVal, maxVal, additionalSeed /*=0*/ )
+	local iSeed = self:GetPredictionRandomSeed()
+	assert( iSeed ~= 1 )
+	
+	additionalSeed = additionalSeed or 0
+	local seed = random.SeedFileLineHash( iSeed, sharedname, additionalSeed )
+	random.SetSeed( seed )
 	// HACK:  Can't call RandomVector/Angle because it uses rand() not vstlib Random*() functions!
 	// Get a random vector.
-	Vector random;
-	random.x = RandomFloat( minVal, maxVal );
-	random.y = RandomFloat( minVal, maxVal );
-	random.z = RandomFloat( minVal, maxVal );
-	return random;
-}
+	local random = Vector( random.RandomFloat( minVal, maxVal ), 
+						random.RandomFloat( minVal, maxVal ), 
+						random.RandomFloat( minVal, maxVal ) )
+	
+	return random
+end
 
-QAngle SharedRandomAngle( const char *sharedname, float minVal, float maxVal, int additionalSeed /*=0*/ )
-{
-	Assert( CBaseEntity::GetPredictionRandomSeed() != -1 );
-
-	int seed = SeedFileLineHash( CBaseEntity::GetPredictionRandomSeed(), sharedname, additionalSeed );
-	RandomSeed( seed );
-
+function _R.Entity:SharedRandomAngle( sharedname, minVal, maxVal, additionalSeed /*=0*/ )
+	local iSeed = self:GetPredictionRandomSeed()
+	assert( iSeed ~= 1 )
+	
+	additionalSeed = additionalSeed or 0
+	local seed = random.SeedFileLineHash( iSeed, sharedname, additionalSeed )
+	random.SetSeed( seed )
 	// HACK:  Can't call RandomVector/Angle because it uses rand() not vstlib Random*() functions!
 	// Get a random vector.
-	Vector random;
-	random.x = RandomFloat( minVal, maxVal );
-	random.y = RandomFloat( minVal, maxVal );
-	random.z = RandomFloat( minVal, maxVal );
-	return QAngle( random.x, random.y, random.z );
-}]]--
+	local random = Angle( random.RandomFloat( minVal, maxVal ), 
+						random.RandomFloat( minVal, maxVal ), 
+						random.RandomFloat( minVal, maxVal ) )
+	
+	return random
+end
 
 function PassServerEntityFilter( pTouch, pPass ) -- Fix; no table. Just a plain function
 	if ( pPass == nil ) then

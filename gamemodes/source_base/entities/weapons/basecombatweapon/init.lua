@@ -3,6 +3,10 @@ AddCSLuaFile( "shared.lua" )
 
 include( "shared.lua" )
 
+CreateConVar( "weapon_showproficiency", "0" )
+
+-- Fix; precache stuff
+
 function SWEP:WeaponRangeAttack1Condition( flDot, flDist )
 	if ( self:UsesPrimaryAmmo() and not self:HasPrimaryAmmo() ) then
 		return COND_NO_PRIMARY_AMMO
@@ -18,7 +22,7 @@ function SWEP:WeaponRangeAttack1Condition( flDot, flDist )
 end
 
 function SWEP:WeaponRangeAttack2Condition( flDot, flDist )
-	return COND_NONE
+	return COND_NONE -- Fix
 end
 
 function SWEP:WeaponMeleeAttack1Condition( flDot, flDist )

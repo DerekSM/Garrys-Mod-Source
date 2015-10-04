@@ -1,5 +1,7 @@
 include( "shared.lua" )
 
+SWEP.DrawCrosshair
+
 function SWEP:GetActiveWeapon()
 	local player = LocalPlayer()
 
@@ -29,7 +31,7 @@ function SWEP:OnRestore()
 	end
 end
 
-function SWEP:IsBeingCarred()
+function SWEP:IsBeingCarred() -- Fix; is this useful?
 	return IsValid( self.Owner )
 end
 
@@ -46,13 +48,13 @@ function SWEP:Redraw() -- Fix; needed?
 		self:DrawCrosshair()
 	end
 
-	// ammo drawing has been moved into hud_ammo.cpp -- Fix, file type?
+	// ammo drawing has been moved into hud_ammo.cpp -- Fix
 end
 
 function SWEP:DrawCrosshair()
 	local player = LocalPlayer()
 
-	if ( not IsValid( LocalPlayer() ) ) then
+	if ( not IsValid( player ) ) then
 		return
 	end
 
@@ -92,7 +94,7 @@ function SWEP:DrawCrosshair()
 	end
 	
 	// Find out if this weapon's auto-aimed onto a target
-	local bOnTarget = ( self.m_iState == WEAPON_IS_ONTARGET ) -- Fix; add states back?
+	local bOnTarget = ( self:GetState() == WEAPON_IS_ONTARGET ) -- Fix; add states back?
 
 	if ( player:GetFOV() >= 90 ) then
 		// normal crosshairs
@@ -134,61 +136,43 @@ end
 
 function SWEP:IsActiveByLocalPlayer()
 	if ( self:IsCarriedByLocalPlayer() ) then
-		return ( self.m_iState == WEAPON_IS_ACTIVE ) -- Fix
+		return ( self:GetState() == WEAPON_IS_ACTIVE ) -- Fix
 	end
 
 	return false
 end
---[[
-function SWEP:GetShootPos()
-	self:GetRenderAngles()
+
+function SWEP:GetShootPosition() -- Fix; named this to test if ShootPos and this return the same thing
+	local vAngles = Angle( 0, 0, 0 )
+	local vOrigin = self:GetRenderOrigin()
+	
+	// Get the entity because the weapon doesn't have the right angles
+	local pEnt = self.Owner
+	if ( IsValid( pEnt ) ) then
+		if ( pEnt == LocalPlayer() ) then
+			vAngles = pEnt:EyeAngles()
+		else
+			vAngles = pEnt:GetRenderAngles()
+		end
+	end
+	
+	if ( self:IsActiveByLocalPlayer() and not self:ShouldDrawLocalPlayer() ) then
+		local vm = IsValid( pEnt ) and pEnt:GetViewModel() or NULL
+		if ( IsValid( vm ) ) then
+			local iAttachment = vm:LookupAttachment( "muzzle" )
+			vOrigin = vm:GetAttachment( iAttachment ).Pos
+		end
+	else
+		// Thirdperson
+		local iAttachment = self:LookupAttachment( "muzzle" )
+		vOrigin = self:GetAttachment( iAttachment ).Pos
+	end
+	
+	return  { Ang = vAngles, Pos = vOrigin } -- AngPos struct; models Lua implementation of GetAttachment
 end
-]]-- Fix; do we need a binding for this?
 
-function SWEP:ShouldDraw()
-	// FIXME: All weapons with owners are set to transmit in CBaseCombatWeapon::UpdateTransmitState,
-	// even if they have EF_NODRAW set, so we have to check this here. Ideally they would never
-	// transmit except for the weapons owned by the local player.
-	if ( self:IsEffectActive( EF_NODRAW ) ) then
-		return false
-	end
-
-	local pOwner = self.Owner
-
-	// weapon has no owner, always draw it
-	if ( not IsValid( pOwner ) ) then
-		return true
-	end
-
-	local bIsActive = ( self.m_iState == WEAPON_IS_ACTIVE )
-
-	local pLocalPlayer = LocalPlayer()
-
-	 // carried by local player?
-	if ( pOwner == pLocalPlayer ) then
-		// Only ever show the active weapon
-		if ( not bIsActive ) then
-			return false
-		end
-
-		// 3rd person mode
-		if ( self:ShouldDrawLocalPlayer() ) then
-			return true
-		end
-
-		// don't draw active weapon if not in some kind of 3rd person mode, the viewmodel will do that
-		return false;
-	end
-
-	// If it's a player, then only show active weapons
-	if ( pOwner:IsPlayer() ) then
-		// Show it if it's active...
-		return bIsActive
-	end
-
-	// FIXME: We may want to only show active weapons on NPCs
-	// These are carried by AIs; always show them
-	return true
+function SWEP:ShouldDrawCrosshair()
+	return self.DrawCrosshair
 end
 
 function SWEP:ShouldDrawPickup() -- Fix
@@ -202,6 +186,3 @@ function SWEP:ShouldDrawPickup() -- Fix
 	
 	return true
 end
-
---[[function SWEP:DrawModel() -- Fix, check if we need this
-end]]

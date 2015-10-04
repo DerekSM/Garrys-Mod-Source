@@ -7,6 +7,9 @@ SF_WEAPON_START_CONSTRAINED	= bit.lshift( 1, 0 )
 SF_WEAPON_NO_PLAYER_PICKUP	= bit.lshift( 1, 1 )
 SF_WEAPON_NO_PHYSCANNON_PUNT = bit.lshift( 1, 2 )
 
+//Percent
+CLIP_PERC_THRESHOLD = 0.75
+
 // entity capabilities
 // These are caps bits to indicate what an object's capabilities (currently used for +USE, save/restore and level transitions)
 FCAP_MUST_SPAWN	= 0x00000001		// Spawn after restore
@@ -28,76 +31,124 @@ FCAP_MASTER = 0x10000000		// Can be used to "master" other entities (like multis
 FCAP_WCEDIT_POSITION = 0x40000000		// Can change position and update Hammer in edit mode
 FCAP_DONT_SAVE = 0x80000000		// Don't save this
 
-SWEP.m_fMinRange1 = 65
-SWEP.m_fMinRange2 = 65
-SWEP.m_fMaxRange1 = 1024
-SWEP.m_fMaxRange2 = 1024
+SWEP.MinRange1 = 65			// What's the closest this weapon can be used?
+SWEP.MinRange2 = 65			// What's the closest this weapon can be used?
+SWEP.MaxRange1 = 1024		// What's the furthest this weapon can be used?
+SWEP.MaxRange2 = 1024		// What's the furthest this weapon can be used?
 
-SWEP.m_bReloadsSingly = false
+SWEP.ReloadsSingly = false	// True if this weapon reloads 1 round at a time
 
-EMPTY = 1
-SINGLE = 2
-SINGLE_NPC = 3
-WPN_DOUBLE = 4 // Can't be "DOUBLE" because windows.h uses it.
-DOUBLE_NPC = 5
-BURST = 6
-RELOAD = 7
-RELOAD_NPC = 8
-MELEE_MISS = 9
-MELEE_HIT = 10
-MELEE_HIT_WORLD = 11
-SPECIAL1 = 12
-SPECIAL2 = 13
-SPECIAL3 = 14
+SWEP.m_flNextEmptySoundTime = 0.0 // delay on empty sound playing -- Originally public; made protected to reflect that it isn't a config value
+
+local m_iReloadHudHintCount = 0				// How many times has this weapon displayed its reload HUD hint?
+local m_iAltFireHudHintCount = 0			// How many times has this weapon displayed its alt-fire HUD hint?
+local m_flHudHintMinDisplayTime = 0.0		// if the hint is squelched before this, reset my counter so we'll display it again.
+local m_bAltFireHudHintDisplayed = false	// Have we displayed an alt-fire HUD hint since this weapon was deployed?
+local m_bReloadHudHintDisplayed = false		// Have we displayed a reload HUD hint since this weapon was deployed?
+local m_flHudHintPollTime = 0.0				// When to poll the weapon again for whether it should display a hud hint.
+
+EMPTY = 0
+SINGLE = 1
+SINGLE_NPC = 2
+WPN_DOUBLE = 3
+DOUBLE_NPC = 4
+BURST = 5
+RELOAD = 6
+RELOAD_NPC = 7
+MELEE_MISS = 8
+MELEE_HIT = 9
+MELEE_HIT_WORLD = 10
+SPECIAL1 = 11
+SPECIAL2 = 12
+SPECIAL3 = 13
+
+// -----------------------------------------
+//	Vector cones
+// -----------------------------------------
+// VECTOR_CONE_PRECALCULATED - this resolves to vec3_origin, but adds some
+// context indicating that the person writing the code is not allowing
+// FireBullets() to modify the direction of the shot because the shot direction
+// being passed into the function has already been modified by another piece of
+// code and should be fired as specified. See GetActualShotTrajectory(). 
+
+// NOTE: The way these are calculated is that each component == sin (degrees/2)
+VECTOR_CONE_PRECALCULATED = vec3_origin
+VECTOR_CONE_1DEGREES = Vector( 0.00873, 0.00873, 0.00873 )
+VECTOR_CONE_2DEGREES = Vector( 0.01745, 0.01745, 0.01745 )
+VECTOR_CONE_3DEGREES = Vector( 0.02618, 0.02618, 0.02618 )
+VECTOR_CONE_4DEGREES = Vector( 0.03490, 0.03490, 0.03490 )
+VECTOR_CONE_5DEGREES = Vector( 0.04362, 0.04362, 0.04362 )
+VECTOR_CONE_6DEGREES = Vector( 0.05234, 0.05234, 0.05234 )
+VECTOR_CONE_7DEGREES = Vector( 0.06105, 0.06105, 0.06105 )
+VECTOR_CONE_8DEGREES = Vector( 0.06976, 0.06976, 0.06976 )
+VECTOR_CONE_9DEGREES = Vector( 0.07846, 0.07846, 0.07846 )
+VECTOR_CONE_10DEGREES = Vector( 0.08716, 0.08716, 0.08716 )
+VECTOR_CONE_15DEGREES = Vector( 0.13053, 0.13053, 0.13053 )
+VECTOR_CONE_20DEGREES = Vector( 0.17365, 0.17365, 0.17365 )
 
 SWEP.HoldType = "normal"
 
+-- SubType
+
 SWEP.Primary =
 {
-	Ammo = -1,
-	ClipSize = -1
+	Ammo = "none",
+	ClipSize = -1,
+	DefaultClip = 0,
+	Automatic = true,
 }
 
 SWEP.Secondary =
 {
-	Ammo = -1,
-	ClipSize = -1
+	Ammo = "none",
+	ClipSize = -1,
+	DefaultClip = 0,
+	Automatic = true,
 }
 
 SWEP.ShootSounds = {
-	"", -- EMPTY
-	"", -- SINGLE
-	"", -- SINGLE_NPC
-	"", -- WPN_DOUBLE
-	"", -- DOUBLE_NPC
-	"", -- BURST
-	"", -- RELOAD
-	"", -- RELOAD_NPC
-	"", -- MELEE_MISS
-	"", -- MELEE_HIT
-	"", -- MELEE_HIT_WORLD
-	"", -- SPECIAL1
-	"", -- SPECIAL2,
-	"", -- SPECIAL3
+	[ EMPTY ] = "",
+	[ SINGLE ] = "",
+	[ SINGLE_NPC ] = "",
+	[ WPN_DOUBLE ] = "",
+	[ DOUBLE_NPC ] = "",
+	[ BURST ] = "",
+	[ RELOAD ] = "",
+	[ RELOAD_NPC ] = "",
+	[ MELEE_MISS ] = "",
+	[ MELEE_HIT ] = "",
+	[ MELEE_HIT_WORLD ] = "",
+	[ SPECIAL1 ] = "",
+	[ SPECIAL2 ] = "",
+	[ SPECIAL3 ] = ""
 }
 
+-- Mimics the Spawn method value reset
 function SWEP:Initialize()
 	self:SetHoldType( self.HoldType )
 	
-	self.m_iReloadHintCount = 0
-	self.m_iAltFireHudHintCount = 0
-	self.m_flHudHintMinDisplayTime = 0
+	-- Predictability is enabled by default on weapons. If I redo the animation prefix system, I will reenable manual prediction setting
+	-- self:SetPredictable( false )
+	
+	self.m_flNextEmptySoundTime = 0.0
+	m_iReloadHudHintCount = 0
+	m_iAltFireHudHintCount = 0
+	m_flHudHintMinDisplayTime = 0
+end
+
+function SWEP:IsPredicted()
+	return true
 end
 
 function SWEP:OnRemove()
-	-- We do nothing here since we don't have to worry about weapon constraints
+	-- We do nothing here since we don't override weapon constraints
 end
 
 function SWEP:SetupDataTables()
 	-- self:NetworkVar( "Entity", nil, "Owner" )
 	-- self:NetworkVar( "Float", nil, "PrimaryAttack" )
 	-- self:NetworkVar( "Float", nil, "SecondaryAttack" )
-	self:NetworkVar( "Float", 0, "WeaponIdleTime" )
+	self:NetworkVar( "Float", 0, "WeaponIdleTime" ) -- Fix; ItemPostFrame
 	-- self:NetworkVar( "Int", nil, "ViewModelIndex" )
 	-- self:NetworkVar( "Int", nil, "WorldModelIndex" )
 	-- self:NetworkVar( "Int", 0, "State" ) // See WEAPON_* definitions
@@ -112,7 +163,9 @@ function SWEP:Precache()
 	util.PrecacheModel( self.WorldModel )
 	
 	for _, sound in ipairs( self.ShootSounds ) do
-		util.PrecacheSound( sound )
+		if ( sound ) ~= "" then
+			util.PrecacheSound( sound )
+		end
 	end
 end
 
@@ -128,7 +181,7 @@ function SWEP:GetWorldModel()
 	return self.WorldModel
 end
 
-function SWEP:GetAnimPrefix()
+function SWEP:GetAnimPrefix()	-- fix; uses?
 	return self.AnimationPrefix
 end
 
@@ -157,7 +210,7 @@ function SWEP:UsesClipsForAmmo1()
 end
 
 function SWEP:IsMeleeWeapon()
-	return self.m_bMeleeWeapon
+	return self.m_bMeleeWeapon -- Fix
 end
 
 function SWEP:UsesClipsForAmmo2()
@@ -176,10 +229,6 @@ function SWEP:AllowsAutoSwtichFrom()
 	return self.AutoSwitchFrom
 end
 
-function SWEP:GetWeaponFlags()
-	return self:GetFlags() -- Fix
-end
-
 function SWEP:GetSlot()
 	return self.Slot
 end
@@ -192,7 +241,38 @@ function SWEP:GetClassName()
 	return self.ClassName
 end
 
-function SWEP:GetSpriteActive()
+function SWEP:GetSpriteActive() -- Fix
+end
+
+function SWEP:GetSpriteInactive()
+end
+
+function SWEP:GetSpriteAmmo()
+end
+
+function SWEP:GetSpriteAmmo()
+end
+
+function SWEP:GetSpriteAmmo2()
+end
+
+function SWEP:GetSpriteCrosshair()
+end
+
+function SWEP:GetSpriteAutoaim()
+end
+
+function SWEP:GetSpriteZoomedCrosshair()
+end
+
+function SWEP:GetSpriteZoomedAutoaim()
+end
+
+function SWEP:GetShootSound( iIndex )
+	return self.ShootSounds[ iIndex ]
+end
+
+function SWEP:GetRumbleEffect()
 end
 
 -- 10,000 accessors later
@@ -200,10 +280,6 @@ end
 function SWEP:GetOwner()
 	return self.Owner
 end
---[[
-function SWEP:SetOwner( owner )
-	self.Owner = owner
-end]]
 
 function SWEP:IsAllowedToSwitch()
 	return true
@@ -246,7 +322,7 @@ function SWEP:HasWeaponIdleTimeElapsed()
 end
 
 function SWEP:Drop( vecVelocity )
-	-- Cool; Fix. Let's add some really sick drop system!
+	-- Cool; Fix. Let's add a manual drop system
 end
 
 function SWEP:MakeTracer( vecTracerSrc, tr, iTracerType )
@@ -261,19 +337,19 @@ function SWEP:MakeTracer( vecTracerSrc, tr, iTracerType )
 	
 	local iEntIndex = pOwner:EntIndex()
 	
-	if ( not game.SinglePlayer() ) then
+	if ( game.Multiplayer() ) then
 		iEntIndex = self:EntIndex()
 	end
 	
 	local iAttachment = self:GetTracerAttachment()
 	
 	if ( iTracerType == TRACER_LINE or iTracerType == TRACER_LINE_AND_WHIZ ) then
-		util.Tracer( vecTracerSrc, tr.endpos, iEntIndex, iAttachment, 0.0, true, pszTracerName )
+		util.Tracer( vecTracerSrc, tr.HitPos, iEntIndex, iAttachment, 0.0, true, pszTracerName )
 	end
-end -- Fix; the Source implementation is so shitty
+end
 
 function SWEP:ShouldDisplayAltFireHUDHint()
-	if ( self.m_iAltFireHudHintCount >= WEAPON_RELOAD_HUD_HINT_COUNT ) then
+	if ( m_iAltFireHudHintCount >= WEAPON_RELOAD_HUD_HINT_COUNT ) then
 		return false
 	elseif ( self:UsesSecondaryAmmo() and self:HasSecondaryAmmo() ) then
 		return true
@@ -295,8 +371,9 @@ function SWEP:DisplayAltFireHudHint()
 	m_flHudHintMinDisplayTime = gpGlobals->curtime + MIN_HUDHINT_DISPLAY_TIME;
 #endif//CLIENT_DLL]]-- Fix
 end
+
+function SWEP:RescindAltFireHudHint()
 --[[
-void CBaseCombatWeapon::RescindAltFireHudHint()
 {
 #if !defined( CLIENT_DLL )
 	Assert(m_bAltFireHudHintDisplayed);
@@ -305,11 +382,11 @@ void CBaseCombatWeapon::RescindAltFireHudHint()
 	--m_iAltFireHudHintCount;
 	m_bAltFireHudHintDisplayed = false;
 #endif//CLIENT_DLL
-}
-]]
+}]]
+end
 
 function SWEP:ShouldDisplayReloadHUDHint()
-	if ( self.m_iReloadHudHintCount >= WEAPON_RELOAD_HUD_HINT_COUNT ) then
+	if ( m_iReloadHudHintCount >= WEAPON_RELOAD_HUD_HINT_COUNT ) then
 		return false
 	end
 	
@@ -323,20 +400,21 @@ function SWEP:ShouldDisplayReloadHUDHint()
 	
 	return false
 end
---[[
-void CBaseCombatWeapon::DisplayReloadHudHint()
-{
+
+function SWEP:DisplayReloadHudHint()
+--[[{
 #if !defined( CLIENT_DLL )
 	UTIL_HudHintText( GetOwner(), "valve_hint_reload" );
 	m_iReloadHudHintCount++;
 	m_bReloadHudHintDisplayed = true;
 	m_flHudHintMinDisplayTime = gpGlobals->curtime + MIN_HUDHINT_DISPLAY_TIME;
 #endif//CLIENT_DLL
-}
+}]]
+end
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-void CBaseCombatWeapon::RescindReloadHudHint()
-{
+function SWEP:RescindReloadHudHint()
+--[[{
 #if !defined( CLIENT_DLL )
 	Assert(m_bReloadHudHintDisplayed);
 
@@ -346,10 +424,15 @@ void CBaseCombatWeapon::RescindReloadHudHint()
 #endif//CLIENT_DLL
 }
 ]]
+end
 
 if ( CLIENT ) then
 	function SWEP:FireAnimationEvent( origin, angles, event, options )
 		return false
+	end
+	
+	function SWEP:ShouldDrawCrosshair()
+		return self.DrawCrosshair
 	end
 end
 
@@ -429,7 +512,7 @@ function SWEP:SetViewModel()
 end
 --[[
 function SWEP:SendWeaponAnim( iActivity )
-	return self:SetIdealActivity( iActivity ) -- Fix? Is this needed?
+	return self:SetIdealActivity( iActivity ) -- Fix
 end
 ]]--
 function SWEP:HasAnyAmmo()
@@ -458,7 +541,6 @@ function SWEP:HasPrimaryAmmo()
 		end
 	else
 		// No owner, so return how much primary ammo I have along with me
-		-- Whelp, you solved the mystery. Go back and check through redundant validity checks, since SWEPs don't run with no owner
 		if ( self:GetPrimaryAmmoCount() > 0 ) then
 			return true
 		end
@@ -487,7 +569,7 @@ function SWEP:HasSecondaryAmmo()
 end
 
 function SWEP:UsesPrimaryAmmo()
-	if ( self.Primary.Ammo ~= "none" or self.Primary.ClipSize == -1 ) then
+	if ( game.GetAmmoID( self.Primary.Ammo ) <= 0 ) then
 		return false
 	end
 	
@@ -495,7 +577,7 @@ function SWEP:UsesPrimaryAmmo()
 end
 
 function SWEP:UsesSecondaryAmmo()
-	if ( self.Secondary.Ammo ~= "none" or self.Secondary.ClipSize == -1 ) then
+	if ( game.GetAmmoID( self.Secondary.Ammo ) <= 0 ) then
 		return false
 	end
 	
@@ -518,7 +600,7 @@ function SWEP:SetWeaponVisible( visible )
 	else
 		self:AddEffects( EF_NODRAW )
 		if ( IsValid( vm ) ) then
-			vm:RemoveEffects( EF_NODRAW )
+			vm:AddEffects( EF_NODRAW )
 		end
 	end
 end
@@ -547,13 +629,18 @@ function SWEP:ReloadOrSwitchWeapon()
 	// If we don't have any ammo, switch to the next best weapon
 	if ( not self:HasAnyAmmo() and flNextPrimaryAttack < curtime and flNextSecondaryAttack < curtime ) then
 		// weapon isn't useable, switch.
-		if ( ( bit.band(self:GetFlags(), ITEM_FLAG_NOAUTOSWITCHEMPTY) == false ) and ( GM:SwitchToNextBestWeapon( pOwner, self ) ) ) then -- Fix; add this function
+		if ( ( bit.band(self:GetFlags(), ITEM_FLAG_NOAUTOSWITCHEMPTY) == 0 ) and ( GM:SwitchToNextBestWeapon( pOwner, self ) ) ) then
 			self:SetNextPrimaryFire( curtime + 0.3 )
 			return true
 		end
 	else
 		// Weapon is useable. Reload if empty and weapon has waited as long as it has to after firing
-		if ( self:UsesClipsForAmmo1() and (self:Clip1() == 0) and bit.band(self:GetFlags(), ITEM_FLAG_NOAUTORELOAD) == false and flNextPrimaryAttack < curtime and flNextSecondaryAttack < curtime ) then
+		if ( self:UsesClipsForAmmo1() and 
+			(self:Clip1() == 0) and 
+			bit.band(self:GetFlags(), ITEM_FLAG_NOAUTORELOAD) == 0 and 
+			flNextPrimaryAttack < curtime and 
+			flNextSecondaryAttack < curtime ) then
+			// if we're successfully reloading, we're done
 			if ( self:Reload() ) then
 				return true
 			end
@@ -564,11 +651,9 @@ function SWEP:ReloadOrSwitchWeapon()
 end
 
 function SWEP:DefaultDeploy( iActivity, szAnimExt )
-	// Msg( "deploy %s at %f\n", GetClassname(), gpGlobals->curtime );
-
 	// Weapons that don't autoswitch away when they run out of ammo 
 	// can still be deployed when they have no ammo.
-	if ( not self:HasAnyAmmo() and self:AllowsAutoSwtichFrom() ) then
+	if ( not self:CanDeploy() or ( not self:HasAnyAmmo() and self:AllowsAutoSwtichFrom() ) ) then
 		return false
 	end
 	
@@ -581,7 +666,7 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 		
 		pOwner:SetAnimationExtension( szAnimExt ) -- Fix
 		
-		self:SetViewModel() -- Fix; not needed
+		self:SetViewModel()
 		self:SendWeaponAnim( iActivity )
 		
 		pOwner:SetNextAttack( curTime + self:SequenceDuration() )
@@ -590,11 +675,11 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 	// Can't shoot again until we've finished deploying
 	self:SetNextPrimaryFire( CurTime() + self:SequenceDuration() )
 	self:SetNextSecondaryFire( CurTime() + self:SequenceDuration() )
-	self.m_flHudHintMinDisplayTime = 0
+	m_flHudHintMinDisplayTime = 0
 	
-	self.m_bAltFireHudHintDisplayed = false
-	self.m_bReloadHudHintDisplayed = false
-	self.m_flHudHintPollTime = CurTime() + 5.0
+	m_bAltFireHudHintDisplayed = false
+	m_bReloadHudHintDisplayed = false
+	m_flHudHintPollTime = CurTime() + 5.0
 	
 	self:SetWeaponVisible( true )
 	
@@ -626,17 +711,37 @@ function SWEP:GetThinkFunction()
 	return self.ThinkFunc
 end
 
-function SWEP:Holster( pSwitchingTo )
+function SWEP:GetLastWeapon()
+	return self
+end
+-- Fix these three; uses?
+function SWEP:CanLower()
+	return false
+end
 
+function SWEP:Ready()
+	return false
+end
+
+function SWEP:Lower()
+	return false
+end
+
+function SWEP:ItemHolsterFrame()
+end
+
+function SWEP:Holster( pSwitchingTo )
+	pSwitchingTo = pSwitchingTo
+	
 	// cancel any reload in progress.
 	self.m_bInReload = false
 	
 	// kill any think functions
-	--self:SetThinkFunction( function() end ) -- Fix; get lua exposure instead of a dumb hack
+	timer.Simple( 0, if IsValid( self ) then self:SetThinkFunction( function() end ) end ) -- Fix
 	
 	// Send holster animation
 	self:SendWeaponAnim( ACT_VM_HOLSTER )
-	--[[
+	
 	// Some weapon's don't have holster anims yet, so detect that
 	local flSequenceDuration = 0
 	if ( self:GetActivity() == ACT_VM_HOLSTER ) then
@@ -649,23 +754,23 @@ function SWEP:Holster( pSwitchingTo )
 	end
 	
 	// If we don't have a holster anim, hide immediately to avoid timing issues
-	if ( not flSequenceDuration ) then
-		self:SetVisible( false ) -- fix
+	if ( flSequenceDuration == 0 ) then
+		self:SetWeaponVisible( false )
 	else
 		// Hide the weapon when the holster animation's finished
-		--self:SetContextThink() -- Fix
+		timer.Simple( CurTime() + flSequenceDuration, function() if ( IsValid( self ) and IsValid( self.Owner ) and self.Owner:GetActiveWeapon() == self then self:SetWeaponVisible( false ) end end )
 	end
 	
 	// if we were displaying a hud hint, squelch it.
-	if ( self.m_flHudHintMinDisplayTime and CurTime() < self.m_flHudHintMinDisplayTime ) then
-		if( self.m_bAltFireHudHintDisplayed ) then
+	if ( m_flHudHintMinDisplayTime and CurTime() < m_flHudHintMinDisplayTime ) then
+		if( m_bAltFireHudHintDisplayed ) then
 			self:RescindAltFireHudHint()
 		end
-		if( self.m_bReloadHudHintDisplayed ) then
+		if( m_bReloadHudHintDisplayed ) then
 			self:RescindReloadHudHint()
 		end
 	end
-	]]
+	
 	return true
 end
 
@@ -674,25 +779,29 @@ function SWEP:CanHolster()
 end
 
 if ( SERVER ) then
-	function SWEP:InputHideWeapon( inputdata )
-		// Only hide if we're still the active weapon. If we're not the active weapon
-		if ( IsValid( self.Owner ) ) then
-			self:SetWeaponVisible( false )
+	function SWEP:KeyValue( key, value ) -- Fix; check if this function exists on SWEPs
+		print( "CBaseCombatWeapon output: " .. name ) -- Fix
+	end
+	
+	function SWEP:AcceptInput( name )
+		print( "CBaseCombatWeapon input: " .. name )
+		if ( name == "HideWeapon" and IsValid( self.Owner ) ) then
+			self:SetWeaponVisible()
 		end
 	end
 end
-
+--[[
 function SWEP:HideThink()
 	// Only hide if we're still the active weapon. If we're not the active weapon
 	if ( IsValid( self.Owner ) ) then
 		self:SetWeaponVisible( false )
 	end
 end
-
+]]--
 function SWEP:ItemFrame()
 end
 
-SWEP.ThinkFunc = SWEP.ItemFrame
+SWEP.ThinkFunc = SWEP.ItemFrame -- Fix; system to manually progress through pre, item, and post frame thinks
 
 function SWEP:Think() -- Fix
 	self.ThinkFunc()
@@ -719,10 +828,14 @@ function SWEP:GetBulletType()
 	return 0 -- Fix
 end
 
-function SWEP:GetBulletSpread()
-	local cone = VECTOR_CONE_15DEGREES
-	return cone
+function SWEP:GetBulletSpread( proficiency ) -- Fix; do we need proficiency or can it be retrieved?
+	return VECTOR_CONE_15DEGREES
 end
+
+function SWEP:GetSpreadBias( proficiency )
+	return 1.0
+end
+
 --[[
 function SWEP:GetProficiencyValues()
 end]]-- Fix
@@ -771,8 +884,13 @@ function SWEP:GetDamage( flDistance, iLocation )
 	return 0.0
 end
 
+--[[
 function SWEP:GetActivity()
-	return m_Activity -- Fix, tracked internally?
+	return self.m_Activity
+end
+]]
+
+function SWEP:AddViewModelBob( origin, angles )
 end
 
 function SWEP:CalcViewmodelBob()
@@ -808,6 +926,8 @@ function SWEP:GetPrimaryAmmoCount()
 end]]
 
 function SWEP:WeaponSound( sound_type, soundtime )
+	soundtime = soundtime or 0
+	
 	// If we have some sounds from the weapon classname.txt file, play a random one of them
 	local shootsound = self:GetShootSound( sound_type )
 	if ( not shootsound ) then
@@ -818,9 +938,10 @@ function SWEP:WeaponSound( sound_type, soundtime )
 	-- Fix; do all this sound shit
 end
 
-function SWEP:DefaultReload( iClipSize1, iClipSize2, iActivity )
-	print( "run" )
-	
+function SWEP:StopWeaponSound( sound_type )
+end
+
+function SWEP:_DefaultReload( iClipSize1, iClipSize2, iActivity )
 	local pOwner = self.Owner
 	if ( not IsValid( pOwner ) ) then 
 		return false 
@@ -876,7 +997,7 @@ function SWEP:DefaultReload( iClipSize1, iClipSize2, iActivity )
 end
 
 function SWEP:Reload()
-	return self:DefaultReload( self:GetMaxClip1(), self:GetMaxClip2(), ACT_VM_RELOAD )
+	return self:_DefaultReload( self:GetMaxClip1(), self:GetMaxClip2(), ACT_VM_RELOAD )
 end
 
 function SWEP:WeaponIdle()
@@ -903,11 +1024,6 @@ function SWEP:GetDeathNoticeName()
 		return self.m_iszName -- Fix
 	else
 		return "GetDeathNoticeName not implemented on client yet"
-	end
-end
-
-if ( CLIENT ) then
-	function SWEP:CreateMove( flInputSampleTime, pCmd, vecOldViewAngles ) -- Fix
 	end
 end
 
@@ -997,7 +1113,7 @@ function SWEP:PrimaryAttack()
 	local iClip1 = self:Clip1()
 	
 	// If my clip is empty (and I use clips) start reload
-	if ( self:UsesClipsForAmmo1() and not iClip1 ) then
+	if ( self:UsesClipsForAmmo1() and iClip1 <= 0 ) then
 		self:Reload()
 		return
 	end
@@ -1047,13 +1163,13 @@ function SWEP:PrimaryAttack()
 		pPlayer:RemoveAmmo( info.Num, self.Primary.Ammo )
 	end
 	
-	info.Distance = MAX_TRACE_LENGTH
+	-- info.Distance = MAX_TRACE_LENGTH -- Fix
 	info.AmmoType = self.Primary.Ammo
 	info.Tracer = 2
 	
 	if ( SERVER ) then
 		// Fire the bullets
-		info.Spread = pPlayer:GetAttackSpread()
+		info.Spread = pPlayer:GetAttackSpread() -- Fix
 	else
 		//!!!HACKHACK - what does the client want this function for?
 		info.Spread = self:GetBulletSpread()
@@ -1061,7 +1177,7 @@ function SWEP:PrimaryAttack()
 	
 	pPlayer:FireBullets( info )
 	
-	if ( iClip1 and pPlayer:GetAmmoCount( self.Primary.Ammo ) <= 0 ) then
+	if ( iClip1 <= 0 and pPlayer:GetAmmoCount( self.Primary.Ammo ) <= 0 ) then
 		// HEV suit - indicate out of ammo condition
 		-- pPlayer:SetSuitUpdate("!HEV_AMO0", false, 0 ) -- Fix; add HEV suit stuff
 	end
@@ -1075,6 +1191,15 @@ function SWEP:SecondaryAttack()
 	return
 end
 
+function SWEP:FireBullets( info )
+	local pPlayer = self.Owner
+	
+	if ( IsValid( pPlayer ) ) then
+		pPlayer:FireBullets( info )
+	end
+end
+
+--[[
 function SWEP:SetIdealActivity( ideal )
 	local idealSequence = self:SelectWeightedSequence( ideal )
 	
@@ -1105,11 +1230,11 @@ function SWEP:SetIdealActivity( ideal )
 	self:SetWeaponIdleTime( CurTime() + self:SequenceDuration() )
 	return true
 end
-
+]]
 --[[
 function SWEP:ActivityOverride( baseAct, pRequired )
 end -- Fix, do activities
-]]
+
 
 function SWEP:ActivityList()
 	return
@@ -1117,6 +1242,21 @@ end
 
 function SWEP:ActivityListCount()
 	return 0
+end
+]]
+
+function SWEP:GetControlPanelInfo( nPanelIndex, pPanelName )
+	return NULL
+end
+
+function SWEP:GetControlPanelClassName( nPanelIndex, pPanelName )
+	return "vgui_screen"
+end
+
+if ( SERVER ) then
+	function SWEP:GetCapabilities()
+		return 0
+	end
 end
 
 function SWEP:ObjectCaps()
@@ -1129,10 +1269,6 @@ function SWEP:ObjectCaps()
 	return caps
 end
 
-function SWEP:Deploy()
-	return self:DefaultDeploy( self:GetDrawActivity(), self:GetAnimPrefix() )
-end
-
 function SWEP:CanDeploy()
 	return true
 end
@@ -1141,7 +1277,7 @@ function SWEP:GetDrawActivity()
 	return ACT_VM_DRAW
 end
 
-function SWEP:GetDefaultAnimSpeed()
+function SWEP:GetDefaultAnimSpeed() -- Fix
 	return 1.0
 end
 
@@ -1149,6 +1285,46 @@ function SWEP:GetAnimPrefix()
 	return -- Fix
 end
 
-function SWEP:DefaultDeploy()
-	return true
+SWEP.ActivityTranslate =
+{
+	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
+	[ ACT_MP_STAND_RUN ] = ACT_HL2MP_IDLE_PISTOL,
+	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
+	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
+	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
+	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
+	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
+}
+
+function SWEP:SetWeaponHoldType( t )
+	t = string.lower( t )
+	local index = ActIndex[ t ]
+	
+	if ( index == nil ) then
+		Msg( "SWEP:SetWeaponHoldType - ActIndex[ \""..t.."\" ] isn't set! (defaulting to normal)\n" )
+		index = ActIndex[ "normal" ]
+	end
+	
+	self.ActivityTranslate = self.ActivityTranslate or {}
+	self.ActivityTranslate[ ACT_MP_STAND_IDLE ] 				= self.ActivityTranslate[ ACT_MP_STAND_IDLE ] or index
+	self.ActivityTranslate[ ACT_MP_WALK ] 						= self.ActivityTranslate[ ACT_MP_WALK ] or index + 1
+	self.ActivityTranslate[ ACT_MP_RUN ] 						= self.ActivityTranslate[ ACT_MP_RUN ] or index + 2
+	self.ActivityTranslate[ ACT_MP_CROUCH_IDLE ] 				= self.ActivityTranslate[ ACT_MP_CROUCH_IDLE ] or index + 3
+	self.ActivityTranslate[ ACT_MP_CROUCHWALK ] 				= self.ActivityTranslate[ ACT_MP_CROUCHWALK ] or index + 4
+	self.ActivityTranslate[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] 	= self.ActivityTranslate[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] or index + 5
+	self.ActivityTranslate[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] 	= self.ActivityTranslate[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] or index + 5
+	self.ActivityTranslate[ ACT_MP_RELOAD_STAND ]		 		= self.ActivityTranslate[ ACT_MP_RELOAD_STAND ] or index + 6
+	self.ActivityTranslate[ ACT_MP_RELOAD_CROUCH ]		 		= self.ActivityTranslate[ ACT_MP_RELOAD_CROUCH ] or index + 6
+	self.ActivityTranslate[ ACT_MP_JUMP ] 						= self.ActivityTranslate[ ACT_MP_JUMP ] or index + 7
+	self.ActivityTranslate[ ACT_RANGE_ATTACK1 ] 				= self.ActivityTranslate[ ACT_RANGE_ATTACK1 ] or index + 8
+	self.ActivityTranslate[ ACT_MP_SWIM ] 						= self.ActivityTranslate[ ACT_MP_SWIM ] or index + 9
+	
+	-- "normal" jump animation doesn't exist
+	if ( t == "normal" ) then
+		self.ActivityTranslate [ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_SLAM
+	end
+	
+	self:SetupWeaponHoldTypeForAI( t )
 end
+
+function SWEP:TranslateActivity

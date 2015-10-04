@@ -7,16 +7,16 @@ SWEP.CrosshairDeltaDistance = 3
 SWEP.MuzzleFlashType = 0
 SWEP.MuzzleFlashScale = 0.3
 SWEP.ViewModelFOV = 45
-SWEP.vm_normal_offset = Vector( 1.5, -.4, .32 )
-SWEP.vm_prone_offset = Vector( 0, -3, 1 )
-SWEP.default_team = TEAM_ALLIES
+SWEP.vm_normal_offset = Vector( -1, .6, 0 )
+SWEP.vm_prone_offset = Vector( -6, -2, 1 )
+SWEP.default_team = TEAM_AXIS
 
 // Weapon characteristics:
 SWEP.Damage = 40
 SWEP.Accuracy = 0.055
-SWEP.FireDelay = 0.085
+SWEP.FireDelay = 0.09
 SWEP.AccuracyMovePenalty = 0.1
-SWEP.Recoil = 2.15
+SWEP.Recoil = 2.2
 SWEP.Penetration = 1.0
 SWEP.IdleTimeAfterFire = 5.0
 SWEP.IdleInterval = 5.0
@@ -24,7 +24,7 @@ SWEP.BulletsPerShot = 1
 SWEP.WeaponType = WPN_TYPE_SUBMG -- Fix? Vs. "SubMG"
 SWEP.Weight = 20
 SWEP.item_flags = 0
-SWEP.PrintName = "#Weapon_Thompson" -- Fix?
+SWEP.PrintName = "#Weapon_MP40" -- Fix?
 SWEP.bucket = 0
 SWEP.bucket_position = 1
 
@@ -49,16 +49,16 @@ SWEP.HudClipBaseHeight = 2
 SWEP.HudClipBulletHeight = 6
 
 //Weapon Model
-SWEP.ViewModel = "models/weapons/v_thompson.mdl" -- Fix, precache?
-SWEP.WorldModel = "models/weapons/w_thompson.mdl"
+SWEP.ViewModel = "models/weapons/v_mp40.mdl" -- Fix, precache?
+SWEP.WorldModel = "models/weapons/w_mp40.mdl"
 
 //Player Animation
 SWEP.anim_prefix = "tommy"
 
 // Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 SWEP.ShootSounds = { -- Fix; unify shootsound tables
-	[ SINGLE ] = "Weapon_Thompson.Shoot",
-	[ RELOAD ] = "Weapon_Thompson.WorldReload",
+	[ SINGLE ] = "Weapon_MP40.Shoot",
+	[ RELOAD ] = "Weapon_Mp40.WorldReload",
 	[ MELEE_HIT ] = "Weapon_Punch.HitPlayer",
 	[ MELEE_HIT_WORLD ] = "Weapon_Punch.HitWorld"
 }
@@ -69,4 +69,14 @@ SWEP.ShootSounds = { -- Fix; unify shootsound tables
 SWEP.WeaponID = WEAPON_THOMPSON
 SWEP.AltWeaponID = WEAPON_THOMPSON_PUNCH
 
--- Fix; check if in CDODFullAutoPunch weapons if we need to modify the activities to incorporate _EMPTY. The C96 seems to do this in its own file
+function SWEP:GetIdleActivity()
+	local actIdle
+	
+	if ( self:Clip1() < self:GetMaxClip1() ) then
+		actIdle = ACT_VM_IDLE_EMPTY
+	else
+		actIdle = ACT_VM_IDLE
+	end
+	
+	return actIdle
+end
