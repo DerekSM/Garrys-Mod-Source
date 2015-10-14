@@ -254,11 +254,40 @@ SWEP.Secondary =
 	Automatic = false
 }
 	
---[[
+
 function SWEP:ObjectCaps()
-	return ( bit.bor( self.BaseClass:ObjectCaps(), FCAP_USE_IN_RADIUS ) ) -- Fix
+	return ( bit.bor( BaseClass.ObjectCaps( self ), FCAP_USE_IN_RADIUS ) )
 end
-]]
+
+SWEP.OverrideActivities =
+{
+	[ ACT_DOD_STAND_AIM ] = ACT_DOD_STAND_AIM,
+	[ ACT_DOD_CROUCH_AIM ] = ACT_DOD_CROUCH_AIM,
+	[ ACT_DOD_CROUCHWALK_AIM ] = ACT_DOD_CROUCHWALK_AIM,
+	[ ACT_DOD_WALK_AIM ] = ACT_DOD_WALK_AIM,
+	[ ACT_DOD_RUN_AIM ] = ACT_DOD_RUN_AIM,
+	[ ACT_PRONE_IDLE ] = ACT_PRONE_IDLE,
+	[ ACT_PRONE_FORWARD ] = ACT_PRONE_FORWARD,
+	[ ACT_MP_STAND_IDLE ] = ACT_DOD_STAND_IDLE,
+	[ ACT_MP_CROUCH_IDLE ] = ACT_DOD_CROUCH_IDLE,
+	[ ACT_MP_CROUCHWALK ] = ACT_DOD_CROUCHWALK_IDLE,
+	[ ACT_MP_WALK ] = ACT_DOD_WALK_IDLE,
+	[ ACT_MP_RUN ] = ACT_DOD_RUN_IDLE,
+	[ ACT_SPRINT ] = ACT_SPRINT, -- Fix; mp_sprint?
+	
+	[ ACT_RANGE_ATTACK1 ] = ACT_RANGE_ATTACK1,
+	[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_KNIFE, -- Fix
+	[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_CROUCH,
+	[ ACT_DOD_PRIMARYATTACK_PRONE ] = ACT_DOD_PRIMARYATTACK_PRONE,
+	[ ACT_RANGE_ATTACK2 ] = ACT_RANGE_ATTACK2,
+	[ ACT_DOD_SECONDARYATTACK_CROUCH ] = ACT_DOD_SECONDARYATTACK_CROUCH,
+	[ ACT_DOD_SECONDARYATTACK_PRONE ] = ACT_DOD_SECONDARYATTACK_PRONE,
+	
+	// Hand Signals
+	--[ ACT_DOD_HS_IDLE ] = ACT_DOD_HS_IDLE,
+	--[ ACT_DOD_HS_CROUCH ] = ACT_DOD_HS_CROUCH
+}
+
 function SWEP:GetWeaponID()
 	return self.ID
 end
@@ -304,9 +333,9 @@ function SWEP:HideViewModelWhenZoomed()
 end
 
 function SWEP:SetupDataTables()
+	BaseClass.SetupDataTables( self )
 	self:NetworkVar( "Vector", 0, "InitialDropVelocity" ) -- Let the engine handle this for us -- Fix
-	self:NetworkVar( "Float", 0, "SmackTime" )
-	self:NetworkVar( "Float", 1, "WeaponIdleTime" )
+	self:NetworkVar( "Float", 1, "SmackTime" )
 end
 
 if CLIENT then
@@ -473,7 +502,7 @@ function SWEP:Think()
 			// Intentionally blank -- used to switch weapons here
 		elseif ( self:ShouldAutoReload() and self:IsUseable() ) then
 			// weapon is useable. Reload if empty and weapon has waited as long as it has to after firing
-			if ( iClip1 == 0 and not (bit.band(self:GetWeaponFlags(), ITEM_FLAG_NOAUTORELOAD)) and self:GetNextPrimaryFire() < curtime ) then
+			if ( iClip1 == 0 and not (bit.band(self:GetFlags(), ITEM_FLAG_NOAUTORELOAD)) and self:GetNextPrimaryFire() < curtime ) then
 				self:Reload()
 				return
 			end
@@ -500,7 +529,7 @@ end
 
 function SWEP:Precache()
 	// precache base first, it loads weapon scripts
-	self.BaseClass:Precache()
+	BaseClass.Precache( self )
 
 	util.PrecacheSound( "Default.ClipEmpty_Rifle" )
 end
@@ -518,10 +547,10 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 	self:SetNextPrimaryFire( CurTime() )
 	self:SetNextSecondaryFire( CurTime() )
 	
-	self:SetVisible( true )
+	--self:SetVisible( true )
 	--self:SetWeaponModelIndex( szWeaponModel ) -- Fix
 	
-	local vm = pOwner:GetViewModel( )
+	local vm = pOwner:GetViewModel()
 	
 	if ( IsValid( vm ) ) then
 		//set sleeves to proper team
@@ -534,6 +563,11 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 	
 	return true
 end
+
+-- Fix; temp
+SLEEVE_ALLIES = 0
+SLEEVE_AXIS = 1
+
 --[[
 void CWeaponDODBase::SetWeaponModelIndex( const char *pName )
 {
@@ -565,7 +599,7 @@ function SWEP:Drop( vecVelocity )
 	
 	self:SetInitialDropVelocity( vecVelocity )
 	
-	self.BaseClass:Drop( vecVelocity )
+	BaseClass.Drop( self, vecVelocity )
 end
 
 function SWEP:Holster( pSwitchingTo )
@@ -583,9 +617,9 @@ function SWEP:Holster( pSwitchingTo )
 	
 	self.m_bInReload = false
 	
-	--self:SetSmackTime( -1 )
+	self:SetSmackTime( -1 )
 	
-	return self.BaseClass:Holster( pSwitchingTo )
+	return BaseClass.Holster( self, pSwitchingTo )
 end
 
 function SWEP:Deploy()
@@ -601,7 +635,7 @@ function SWEP:Deploy()
 		end
 	end
 	
-	return self.BaseClass:Deploy()
+	return BaseClass.Deploy( self )
 end
 
 if ( CLIENT ) then
@@ -772,7 +806,7 @@ else
 	]]--
 	--[[
 	function SWEP:Spawn()
-		self.BaseClass:Spawn()
+		BaseClass:Spawn()
 
 		// Set this here to allow players to shoot dropped weapons
 		self:SetCollisionGroup( COLLISION_GROUP_WEAPON )
@@ -882,8 +916,8 @@ function SWEP:IsUseable()
 	return true
 end
 
-if ( not CLIENT ) then
-	CreateConVar( "dod_meleeattackforcescale", "8.0", { FCVAR_CHEAT, FCVAR_GAMEDLL } )
+if ( SERVER ) then
+	local dod_meleeattackforcescale = CreateConVar( "dod_meleeattackforcescale", "8.0", { FCVAR_CHEAT, FCVAR_GAMEDLL } )
 end
 --[[
 void CWeaponDODBase::RifleButt( void )
@@ -913,14 +947,14 @@ function SWEP:MeleeAttack( iDamageAmount, iDamageType, flDmgDelay, flAttackDelay
 
 	local pPlayer = self.Owner
 
-	if ( not CLIENT ) then
+	if ( SERVER ) then
 		// Move other players back to history positions based on local player's lag
 		pPlayer:LagCompensation( true )
 	end
 
 	local vForward, vRight, vUp = AngleVectors( pPlayer:EyeAngles() )
-	local vecSrc	= pPlayer:GetShootPos()
-	local vecEnd	= vecSrc + vForward * 48
+	local vecSrc = pPlayer:GetShootPos()
+	local vecEnd = vecSrc + vForward * 48
 
 	local iTraceMask = bit.bor( MASK_SOLID, CONTENTS_HITBOX, CONTENTS_DEBRIS )
 
@@ -1197,7 +1231,7 @@ if ( CLIENT ) then
 			return true
 		end
 		
-		return true --self.BaseClass:OnFireEvent( origin, angles, event, options ) -- Fix
+		return BaseClass.FireAnimationEvent( self, origin, angles, event, options )
 	end
 	
 	function SWEP:ShouldAutoEjectBrass()

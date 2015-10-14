@@ -1,3 +1,5 @@
+local _R = debug.getregistry()
+
 local function MatrixVecToYaw( matrix, vec )
 	vec:Normalize()
 	
@@ -261,4 +263,37 @@ function util.Tracer( vecStart, vecEnd, iEntIndex, iAttachment, flVelocity, bWhi
 		util.Effect( "Tracer", data )
 	end
 
+end
+
+function util.ClipTraceToPlayers( vecAbsStart, vecAbsEnd, mask, filter, tr )
+	local playerTrace
+	local smallestFraction = tr.Fraction
+	local maxRange = 60.0
+	
+	for _,player in pairs( player.GetAll() ) do
+
+		if ( not player:Alive() ) then
+			continue
+		end
+
+		local range = util.DistanceToLine( vecAbsStart, vecAbsEnd, player:WorldSpaceCenter() )
+		if ( range < 0.0 or range > maxRange ) then
+			continue
+		end
+
+		--enginetrace->ClipRayToEntity( ray, mask|CONTENTS_HITBOX, player, &playerTrace );
+		local playerTrace = util.TraceEntity( {
+			start = vecAbsStart,
+			endpos = vecAbsEnd,
+			mask = bit.bor( mask, CONTENTS_HITBOX ),
+			filter = filter,
+		},  player )
+		
+		if ( playerTrace.Fraction < smallestFraction ) then
+			-- we shortened the ray - save off the trace
+			tr = playerTrace
+			smallestFraction = playerTrace.Fraction
+		end
+	end
+	return tr
 end

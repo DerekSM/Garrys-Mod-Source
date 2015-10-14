@@ -4,22 +4,18 @@ SWEP.Base = "weapon_dodbase"
 -- SWEP.m_bFireOnEmpty = true
 
 function SWEP:SetupDataTables()
-	--self.BaseClass:SetupDataTables()
-	self:NetworkVar( "Float", 0, "SmackTime" )
-	self:NetworkVar( "Float", 1, "WeaponIdleTime" )
+	BaseClass.SetupDataTables( self )
 	self:NetworkVar( "Bool", 0, "Zoomed" )
-	
-	self:SetZoomed( false )
 end
 
-function SWEP:Initialize()
-	self.BaseClass:Initialize()
-
-	--self:SetZoomed( false )
+function SWEP:Deploy()
+	--self:SetZoomed( false ) -- Fix; crashes
+	
+	return BaseClass.Deploy( self )
 end
 
 function SWEP:Precache()
-	self.BaseClass:Precache()
+	BaseClass.Precache( self )
 
 	// Precache all weapon ejections, since every weapon will appear in the game.
 	util.PrecacheModel( "models/shells/shell_small.mdl" )
@@ -51,13 +47,13 @@ function SWEP:PrimaryAttack()
 		return false
 	end
 	
-	/* decrement before calling PlayPrimaryAttackAnim, so we can play the empty anim if necessary */
+	// decrement before calling PlayPrimaryAttackAnim, so we can play the empty anim if necessary
 	self:SetClip1( iClip1 - 1 )
 	
 	self:SendWeaponAnim( self:GetPrimaryAttackActivity() )
 	
 	// player "shoot" animation
-	pPlayer:SetAnimation( PLAYER_ATTACK1 )
+	pPlayer:SetAnimation( PLAYER_ATTACK1 ) -- Fix
 	
 	fx.FireBullets( 
 		pPlayer:EntIndex(),
@@ -107,11 +103,11 @@ function SWEP:Reload()
 	
 	local pPlayer = self.Owner
 	local iClip1 = self:Clip1()
-	--[[
+	
 	if ( pPlayer:GetAmmoCount( self:GetPrimaryAmmoType() ) <= 0 and iClip1 <= 0 ) then
 		pPlayer:HintMessage( HINT_AMMO_EXHAUSTED ) -- Fix; shared?
 		return false
-	end]]
+	end
 	
 	local iResult = self:_DefaultReload( self:GetMaxClip1(), self:GetMaxClip2(), self:GetReloadActivity() )
 	if ( not iResult ) then
@@ -130,7 +126,7 @@ function SWEP:GetReloadActivity()
 end
 
 function SWEP:GetDrawActivity()
-	return ACT_VM_DRAW
+	return ACT_VM_DRAW -- Fix
 end
 
 function SWEP:IsSniperZoomed()

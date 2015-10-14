@@ -39,10 +39,10 @@ SWEP.ShootSounds =
 }
 
 function SWEP:PrimaryAttack()
-	self:MeleeAttack( 60, MELEE_DMG_FIST, 0.2, 0.4 ) -- Fix; scale with self.Damage
+	self:MeleeAttack( self.Damage, MELEE_DMG_FIST, 0.2, 0.4 ) -- Fix; scale with self.Damage
 end
 
-SWEP.ActivityTranslate = 
+local acttable = 
 { -- Fix; send in to SetWeaponHoldType
 	[ ACT_DOD_STAND_AIM ] = ACT_DOD_STAND_AIM_KNIFE,
 	[ ACT_DOD_CROUCH_AIM ]		=			ACT_DOD_CROUCH_AIM_KNIFE,
@@ -64,5 +64,11 @@ SWEP.ActivityTranslate =
 
 	// Hand Signals
 	[ ACT_DOD_HS_IDLE ] =				ACT_DOD_HS_IDLE_KNIFE,
-	[ ACT_DOD_HS_CROUCH ] =				ACT_DOD_HS_CROUCH_KNIFE,
+	[ ACT_DOD_HS_CROUCH ] =				ACT_DOD_HS_CROUCH_KNIFE
 }
+
+function SWEP:Initialize()
+	self:RegisterHoldType( "amerknife", acttable )
+	
+	self.BaseClass:Initialize()
+end

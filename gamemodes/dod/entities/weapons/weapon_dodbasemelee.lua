@@ -24,11 +24,6 @@ SWEP.Secondary =
 	Automatic = true
 }
 
-function SWEP:Initialize()
-	self:SetHoldType( "knife" ) -- fix
-	self.BaseClass:Initialize()
-end
-
 function SWEP:PrimaryAttack()
 	self:MeleeAttack( 60, MELEE_DMG_EDGE, 0.2, 0.4 )
 end

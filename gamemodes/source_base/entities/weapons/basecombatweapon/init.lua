@@ -32,7 +32,7 @@ end
 function SWEP:WeaponMeleeAttack2Condition( flDot, flDist )
 	return COND_NONE
 end
-
+--[[
 function SWEP:ObjectCaps()
 	local caps = self.BaseClass:ObjectCaps()
 	if ( not self:IsFollowingEntity() and not self:HasSpawnFlags( SF_WEAPON_NO_PLAYER_PICKUP ) ) then -- Fix
@@ -41,3 +41,4 @@ function SWEP:ObjectCaps()
 	
 	return caps
 end
+]]--

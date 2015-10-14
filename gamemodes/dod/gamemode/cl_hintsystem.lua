@@ -9,3 +9,6 @@ end
 
 function _R.Player:StopHintTimer()
 end
+
+function _R.Player:RemoveHintTimer()
+end

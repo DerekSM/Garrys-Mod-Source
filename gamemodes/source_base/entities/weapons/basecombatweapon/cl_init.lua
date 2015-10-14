@@ -1,7 +1,5 @@
 include( "shared.lua" )
 
-SWEP.DrawCrosshair
-
 function SWEP:GetActiveWeapon()
 	local player = LocalPlayer()
 
@@ -18,11 +16,11 @@ function SWEP:SetDormant( bDormant )
 		self:Holster()
 	end
 	
-	self.BaseClass:SetDormant( bDormant ) -- Fix
+	self.BaseClass.SetDormant( self, bDormant ) -- Fix
 end
 
 function SWEP:OnRestore()
-	self.BaseClass:OnRestore() -- Fix
+	self.BaseClass.OnRestore( self ) -- Fix
 
 	// if the player is holding this weapon, 
 	// mark it as just restored so it won't show as a new pickup
@@ -169,6 +167,52 @@ function SWEP:GetShootPosition() -- Fix; named this to test if ShootPos and this
 	end
 	
 	return  { Ang = vAngles, Pos = vOrigin } -- AngPos struct; models Lua implementation of GetAttachment
+end
+
+function SWEP:ShouldDraw()
+	// FIXME: All weapons with owners are set to transmit in CBaseCombatWeapon::UpdateTransmitState,
+	// even if they have EF_NODRAW set, so we have to check this here. Ideally they would never
+	// transmit except for the weapons owned by the local player.
+	if ( self:IsEffectActive( EF_NODRAW ) ) then
+		return false
+	end
+
+	local pOwner = self.Owner
+
+	// weapon has no owner, always draw it
+	if ( not IsValid( pOwner ) ) then
+		return true
+	end
+
+	local bIsActive = ( self.m_iState == WEAPON_IS_ACTIVE )
+
+	local pLocalPlayer = LocalPlayer()
+
+	 // carried by local player?
+	if ( pOwner == pLocalPlayer ) then
+		// Only ever show the active weapon
+		if ( not bIsActive ) then
+			return false
+		end
+
+		// 3rd person mode
+		if ( self:ShouldDrawLocalPlayer() ) then
+			return true
+		end
+
+		// don't draw active weapon if not in some kind of 3rd person mode, the viewmodel will do that
+		return false;
+	end
+
+	// If it's a player, then only show active weapons
+	if ( pOwner:IsPlayer() ) then
+		// Show it if it's active...
+		return bIsActive
+	end
+
+	// FIXME: We may want to only show active weapons on NPCs
+	// These are carried by AIs; always show them
+	return true
 end
 
 function SWEP:ShouldDrawCrosshair()

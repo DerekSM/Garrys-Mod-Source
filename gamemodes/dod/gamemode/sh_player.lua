@@ -70,9 +70,16 @@ function _R.Player:IsSprinting()
 	return false
 end
 
-hook.Add( "SetupNetworkTables", "DODShit", function()
-	self:NetworkVar( "Float", 30, "NextAttack" )
-end )
+function _R.Player:SetupDataTables()
+	self:NetworkVar( "Float", 30, "NextAttack" ) -- Fix
+end
+
+function _R.Player:SetNextAttack()
+end
+
+function _R.Player:GetNextAttack()
+	return 0
+end
 
 
 --------------

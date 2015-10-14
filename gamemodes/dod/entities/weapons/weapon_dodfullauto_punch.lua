@@ -27,10 +27,8 @@ function SWEP:SecondaryAttack()
 	end
 end
 
-local reload = BaseClass.Reload
-
 function SWEP:Reload()
-	local bSuccess = reload()
+	local bSuccess = BaseClass.Reload( self )
 
 	if ( bSuccess ) then
 		self:SetNextSecondaryFire( CurTime() )

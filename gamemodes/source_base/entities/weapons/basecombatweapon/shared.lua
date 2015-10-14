@@ -329,7 +329,7 @@ function SWEP:MakeTracer( vecTracerSrc, tr, iTracerType )
 	local pOwner = self.Owner
 	
 	if ( not IsValid( pOwner ) ) then
-		-- self.BaseClass( vecTracerSrc, tr, iTracerType ) -- Fix
+		-- BaseClass.MakeTracer( self, vecTracerSrc, tr, iTracerType ) -- Fix
 		return
 	end
 	
@@ -499,7 +499,7 @@ end
 
 function SWEP:SetViewModel()
 	local pOwner = self.Owner
-	if ( not IsValid ( pOwner ) ) then
+	if ( not IsValid( pOwner ) ) then
 		return false
 	end
 	
@@ -664,12 +664,13 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 			return false
 		end
 		
-		pOwner:SetAnimationExtension( szAnimExt ) -- Fix
+		--pOwner:SetAnimationExtension( szAnimExt ) -- Fix
+		--self:SendWeaponAnim( ACT_VM_DEPLOY )
 		
-		self:SetViewModel()
+		--self:SetViewModel()
 		self:SendWeaponAnim( iActivity )
 		
-		pOwner:SetNextAttack( curTime + self:SequenceDuration() )
+		pOwner:SetNextAttack( CurTime() + self:SequenceDuration() )
 	end
 	
 	// Can't shoot again until we've finished deploying
@@ -681,7 +682,6 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 	m_bReloadHudHintDisplayed = false
 	m_flHudHintPollTime = CurTime() + 5.0
 	
-	self:SetWeaponVisible( true )
 	
 /*
 
@@ -737,7 +737,7 @@ function SWEP:Holster( pSwitchingTo )
 	self.m_bInReload = false
 	
 	// kill any think functions
-	timer.Simple( 0, if IsValid( self ) then self:SetThinkFunction( function() end ) end ) -- Fix
+	timer.Simple( 0, function() if IsValid( self ) then self:SetThinkFunction( function() end ) end end ) -- Fix
 	
 	// Send holster animation
 	self:SendWeaponAnim( ACT_VM_HOLSTER )
@@ -755,10 +755,10 @@ function SWEP:Holster( pSwitchingTo )
 	
 	// If we don't have a holster anim, hide immediately to avoid timing issues
 	if ( flSequenceDuration == 0 ) then
-		self:SetWeaponVisible( false )
+		--self:SetWeaponVisible( false )
 	else
 		// Hide the weapon when the holster animation's finished
-		timer.Simple( CurTime() + flSequenceDuration, function() if ( IsValid( self ) and IsValid( self.Owner ) and self.Owner:GetActiveWeapon() == self then self:SetWeaponVisible( false ) end end )
+		timer.Simple( CurTime() + flSequenceDuration, function() if ( IsValid( self ) and IsValid( self.Owner ) and self.Owner:GetActiveWeapon() == self ) then self:SetWeaponVisible( false ) end end )
 	end
 	
 	// if we were displaying a hud hint, squelch it.
@@ -1260,7 +1260,7 @@ if ( SERVER ) then
 end
 
 function SWEP:ObjectCaps()
-	local caps = 0 -- self:ObjectCaps() --self.BaseClass:ObjectCaps() -- Fix!
+	local caps = 0 -- self:ObjectCaps() --BaseClass.ObjectCaps( self ) -- Fix!
 	if ( --not self:IsFollwingEntity() and -- fix 
 		not self:HasSpawnFlags( SF_WEAPON_NO_PLAYER_PICKUP ) ) then
 		caps = bit.bor( caps, FCAP_IMPULSE_USE )
@@ -1284,47 +1284,149 @@ end
 function SWEP:GetAnimPrefix()
 	return -- Fix
 end
+ACT_HL2MP_SWIM = ACT_HL2MP_IDLE + 9 -- Fix; temp hack
+ACT_RANGE_ATTACK = ACT_HL2MP_IDLE + 8
+ACT_HL2MP_SWIM_IDLE = 2057
 
-SWEP.ActivityTranslate =
+ACT_DOD_STAND_IDLE_TOMMY = 665
+ACT_DOD_PRONE_AIM_TOMMY = 664
+ACT_DOD_SPRINT_IDLE_TOMMY = 670
+ACT_DOD_CROUCHWALK_IDLE_TOMMY = 667
+ACT_DOD_RUN_IDLE_TOMMY = 669
+ACT_DOD_WALK_IDLE_TOMMY = 668
+ACT_DOD_CROUCH_IDLE_TOMMY = 666
+ACT_DOD_PRONEWALK_IDLE_TOMMY = 671
+ACT_DOD_CROUCH_AIM_TOMMY = 660
+ACT_DOD_CROUCHWALK_AIM_TOMMY = 661
+ACT_DOD_STAND_AIM_TOMMY = 659
+ACT_DOD_WALK_AIM_TOMMY = 662
+ACT_DOD_RUN_AIM_TOMMY = 663
+
+
+-- FIX: Investigate the 1784 - 1787 gap
+
+SWEP.HoldTypes =
 {
-	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
-	[ ACT_MP_STAND_RUN ] = ACT_HL2MP_IDLE_PISTOL,
-	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
-	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
-	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
-	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
-	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
+	[ "normal" ] = {
+		[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE,
+		[ ACT_MP_WALK ] = ACT_HL2MP_WALK,
+		[ ACT_MP_RUN ] = ACT_HL2MP_RUN,
+		[ ACT_MP_CROUCH_IDLE ] = ACT_HL2MP_IDLE_CROUCH,
+		[ ACT_MP_CROUCHWALK ] = ACT_HL2MP_WALK_CROUCH,
+		[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK,
+		[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK,
+		[ ACT_MP_RELOAD_STAND ] = ACT_HL2MP_GESTURE_RELOAD,
+		[ ACT_MP_RELOAD_CROUCH ] = ACT_HL2MP_GESTURE_RELOAD,
+		[ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_SLAM, -- Fix
+		[ ACT_RANGE_ATTACK1 ] = ACT_HL2MP_GESTURE_RANGE_ATTACK, -- Fix
+		[ ACT_MP_SWIM ] = ACT_HL2MP_SWIM,
+		[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE
+	},
+	
+	[ "pistol" ] = {
+		[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
+		[ ACT_MP_WALK ] = ACT_HL2MP_WALK_PISTOL,
+		[ ACT_MP_RUN ] = ACT_HL2MP_RUN_PISTOL,
+		[ ACT_MP_CROUCH_IDLE ] = ACT_HL2MP_IDLE_CROUCH_PISTOL,
+		[ ACT_MP_CROUCHWALK ] = ACT_HL2MP_WALK_CROUCH_PISTOL,
+		[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_PISTOL,
+		[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_PISTOL,
+		[ ACT_MP_RELOAD_STAND ] = ACT_HL2MP_GESTURE_RELOAD_PISTOL,
+		[ ACT_MP_RELOAD_CROUCH ] = ACT_HL2MP_GESTURE_RELOAD_PISTOL,
+		[ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_PISTOL,
+		[ ACT_RANGE_ATTACK1 ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_PISTOL,
+		[ ACT_MP_SWIM ] = ACT_HL2MP_SWIM_PISTOL,
+		[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE_PISTOL
+	},
+	
+	[ "fist" ] = {
+		[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_FIST,
+		[ ACT_MP_WALK ] = ACT_HL2MP_WALK_FIST,
+		[ ACT_MP_RUN ] = ACT_HL2MP_RUN_FIST,
+		[ ACT_MP_CROUCH_IDLE ] = ACT_HL2MP_IDLE_CROUCH_FIST,
+		[ ACT_MP_CROUCHWALK ] = ACT_HL2MP_WALK_CROUCH_FIST,
+		[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_FIST,
+		[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_FIST,
+		[ ACT_MP_RELOAD_STAND ] = ACT_HL2MP_GESTURE_RELOAD_FIST,
+		[ ACT_MP_RELOAD_CROUCH ] = ACT_HL2MP_GESTURE_RELOAD_FIST,
+		[ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_FIST,
+		[ ACT_RANGE_ATTACK1 ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_FIST,
+		[ ACT_MP_SWIM ] = ACT_HL2MP_SWIM_FIST,
+		[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE_FIST
+	},
+	
+	[ "passive" ] = {
+		[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PASSIVE,
+		[ ACT_MP_WALK ] = ACT_HL2MP_WALK_PASSIVE,
+		[ ACT_MP_RUN ] = ACT_HL2MP_RUN_PASSIVE,
+		[ ACT_MP_CROUCH_IDLE ] = ACT_HL2MP_IDLE_CROUCH_PASSIVE,
+		[ ACT_MP_CROUCHWALK ] = ACT_HL2MP_WALK_CROUCH_PASSIVE,
+		[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_PASSIVE,
+		[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_PASSIVE,
+		[ ACT_MP_RELOAD_STAND ] = ACT_HL2MP_GESTURE_RELOAD_PASSIVE,
+		[ ACT_MP_RELOAD_CROUCH ] = ACT_HL2MP_GESTURE_RELOAD_PASSIVE,
+		[ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_PASSIVE,
+		[ ACT_RANGE_ATTACK1 ] = ACT_HL2MP_GESTURE_RANGE_ATTACK_PASSIVE,
+		[ ACT_MP_SWIM ] = ACT_HL2MP_SWIM_PASSIVE,
+		[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE_PASSIVE
+	}
 }
 
+SWEP.OverrideActivities =
+{
+	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE,
+	[ ACT_MP_WALK ] = ACT_HL2MP_WALK,
+	[ ACT_MP_RUN ] = ACT_HL2MP_RUN,
+	[ ACT_MP_CROUCH_IDLE ] = ACT_HL2MP_IDLE_CROUCH,
+	[ ACT_MP_CROUCHWALK ] = ACT_HL2MP_WALK_CROUCH,
+	[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK,
+	[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK,
+	[ ACT_MP_RELOAD_STAND ] = ACT_HL2MP_GESTURE_RELOAD,
+	[ ACT_MP_RELOAD_CROUCH ] = ACT_HL2MP_GESTURE_RELOAD,
+	[ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_SLAM, -- Fix
+	[ ACT_RANGE_ATTACK1 ] = ACT_HL2MP_GESTURE_RANGE_ATTACK, -- Fix
+	[ ACT_MP_SWIM ] = ACT_HL2MP_SWIM,
+	[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE
+}
+	
+
+local ActTable = SWEP.OverrideActivities
+
 function SWEP:SetWeaponHoldType( t )
-	t = string.lower( t )
-	local index = ActIndex[ t ]
-	
-	if ( index == nil ) then
-		Msg( "SWEP:SetWeaponHoldType - ActIndex[ \""..t.."\" ] isn't set! (defaulting to normal)\n" )
-		index = ActIndex[ "normal" ]
-	end
-	
-	self.ActivityTranslate = self.ActivityTranslate or {}
-	self.ActivityTranslate[ ACT_MP_STAND_IDLE ] 				= self.ActivityTranslate[ ACT_MP_STAND_IDLE ] or index
-	self.ActivityTranslate[ ACT_MP_WALK ] 						= self.ActivityTranslate[ ACT_MP_WALK ] or index + 1
-	self.ActivityTranslate[ ACT_MP_RUN ] 						= self.ActivityTranslate[ ACT_MP_RUN ] or index + 2
-	self.ActivityTranslate[ ACT_MP_CROUCH_IDLE ] 				= self.ActivityTranslate[ ACT_MP_CROUCH_IDLE ] or index + 3
-	self.ActivityTranslate[ ACT_MP_CROUCHWALK ] 				= self.ActivityTranslate[ ACT_MP_CROUCHWALK ] or index + 4
-	self.ActivityTranslate[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] 	= self.ActivityTranslate[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] or index + 5
-	self.ActivityTranslate[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] 	= self.ActivityTranslate[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] or index + 5
-	self.ActivityTranslate[ ACT_MP_RELOAD_STAND ]		 		= self.ActivityTranslate[ ACT_MP_RELOAD_STAND ] or index + 6
-	self.ActivityTranslate[ ACT_MP_RELOAD_CROUCH ]		 		= self.ActivityTranslate[ ACT_MP_RELOAD_CROUCH ] or index + 6
-	self.ActivityTranslate[ ACT_MP_JUMP ] 						= self.ActivityTranslate[ ACT_MP_JUMP ] or index + 7
-	self.ActivityTranslate[ ACT_RANGE_ATTACK1 ] 				= self.ActivityTranslate[ ACT_RANGE_ATTACK1 ] or index + 8
-	self.ActivityTranslate[ ACT_MP_SWIM ] 						= self.ActivityTranslate[ ACT_MP_SWIM ] or index + 9
-	
-	-- "normal" jump animation doesn't exist
-	if ( t == "normal" ) then
-		self.ActivityTranslate [ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_SLAM
-	end
-	
-	self:SetupWeaponHoldTypeForAI( t )
+	ActTable = self.HoldTypes[ t ] or self.OverrideActivities
 end
 
-function SWEP:TranslateActivity
+local DEBUG = true
+
+function SWEP:TranslateActivity( act )
+	if ( DEBUG ) then
+		if act == ACT_RANGE_ATTACK1 then print"BaseCombatWeapon: Range Attack called" end
+	end
+	
+	if ( act == ACT_MP_SWIM and not ( self.Owner:KeyDown( KEY_W ) or self.Owner:KeyDown( KEY_A ) or self.Owner:KeyDown( KEY_S ) or self.Owner:KeyDown( KEY_D ) ) ) then
+		act = ACT_MP_SWIM_IDLE
+	end
+	
+	if ( DEBUG ) then
+		local test = self.Owner:GetSequenceActivityName( self.Owner:SelectWeightedSequence( act ) )
+		-- Unregistered sequences
+		if not ActTable[ act ] and ( test ~= "Not Found!" and test ~= "ACT_GMOD_NOCLIP_LAYER" and test ~= "ACT_LAND" ) then
+			print( "BaseCombatWeapon: Unregistered sequence - " .. test )
+		end
+	end
+	
+	return ActTable[ act ] or -1 -- Fix; return -1 or just re-return the activity?
+end
+
+function SWEP:RegisterHoldType( name, acttable )
+	for parent, child in ipairs( self.OverrideActivities ) do -- Done at 3am; fix
+		if ( acttable[ child ] ) then
+			acttable[ parent ] = acttable[ child ]
+			acttable[ child ] = nil
+		end
+	end
+	
+	self.HoldTypes[ name ] = acttable
+	self:SetHoldType( name )
+	ActTable = acttable
+end
