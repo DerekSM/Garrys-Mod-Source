@@ -86,9 +86,11 @@ VECTOR_CONE_10DEGREES = Vector( 0.08716, 0.08716, 0.08716 )
 VECTOR_CONE_15DEGREES = Vector( 0.13053, 0.13053, 0.13053 )
 VECTOR_CONE_20DEGREES = Vector( 0.17365, 0.17365, 0.17365 )
 
-SWEP.HoldType = "normal"
-
 -- SubType
+
+-- Fix; temp placement
+GS = {}
+GS.AnimSet = "dod"
 
 SWEP.Primary =
 {
@@ -740,11 +742,11 @@ function SWEP:Holster( pSwitchingTo )
 	timer.Simple( 0, function() if IsValid( self ) then self:SetThinkFunction( function() end ) end end ) -- Fix
 	
 	// Send holster animation
-	self:SendWeaponAnim( ACT_VM_HOLSTER )
+	self:SendWeaponAnim( self:GetHolsterActivity() )
 	
 	// Some weapon's don't have holster anims yet, so detect that
 	local flSequenceDuration = 0
-	if ( self:GetActivity() == ACT_VM_HOLSTER ) then
+	if ( self:GetActivity() == self:GetHolsterActivity() ) then
 		flSequenceDuration = self:SequenceDuration()
 	end
 	
@@ -997,14 +999,22 @@ function SWEP:_DefaultReload( iClipSize1, iClipSize2, iActivity )
 end
 
 function SWEP:Reload()
-	return self:_DefaultReload( self:GetMaxClip1(), self:GetMaxClip2(), ACT_VM_RELOAD )
+	return self:_DefaultReload( self:GetMaxClip1(), self:GetMaxClip2(), self:GetReloadActivity() )
 end
 
 function SWEP:WeaponIdle()
 	//Idle again if we've finished
 	if ( self:HasWeaponTimeElapsed() ) then
-		self:SendWeaponAnim( ACT_VM_IDLE )
+		self:SendWeaponAnim( self:GetIdleActivity() )
 	end
+end
+
+function SWEP:GetIdleActivity()
+	return ACT_VM_IDLE
+end
+
+function SWEP:GetHolsterActivity()
+	return ACT_VM_HOLSTER
 end
 
 function SWEP:GetPrimaryAttackActivity()
@@ -1013,6 +1023,10 @@ end
 
 function SWEP:GetSecondaryAttackActivity()
 	return ACT_VM_SECONDARYATTACK
+end
+
+function SWEP:GetReloadActivity()
+	return ACT_VM_RELOAD
 end
 
 function SWEP:AddViewKick()
@@ -1273,10 +1287,6 @@ function SWEP:CanDeploy()
 	return true
 end
 
-function SWEP:GetDrawActivity()
-	return ACT_VM_DRAW
-end
-
 function SWEP:GetDefaultAnimSpeed() -- Fix
 	return 1.0
 end
@@ -1284,30 +1294,20 @@ end
 function SWEP:GetAnimPrefix()
 	return -- Fix
 end
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SWEP.HoldType = "normal"
+
 ACT_HL2MP_SWIM = ACT_HL2MP_IDLE + 9 -- Fix; temp hack
 ACT_RANGE_ATTACK = ACT_HL2MP_IDLE + 8
 ACT_HL2MP_SWIM_IDLE = 2057
-
-ACT_DOD_STAND_IDLE_TOMMY = 665
-ACT_DOD_PRONE_AIM_TOMMY = 664
-ACT_DOD_SPRINT_IDLE_TOMMY = 670
-ACT_DOD_CROUCHWALK_IDLE_TOMMY = 667
-ACT_DOD_RUN_IDLE_TOMMY = 669
-ACT_DOD_WALK_IDLE_TOMMY = 668
-ACT_DOD_CROUCH_IDLE_TOMMY = 666
-ACT_DOD_PRONEWALK_IDLE_TOMMY = 671
-ACT_DOD_CROUCH_AIM_TOMMY = 660
-ACT_DOD_CROUCHWALK_AIM_TOMMY = 661
-ACT_DOD_STAND_AIM_TOMMY = 659
-ACT_DOD_WALK_AIM_TOMMY = 662
-ACT_DOD_RUN_AIM_TOMMY = 663
-
 
 -- FIX: Investigate the 1784 - 1787 gap
 
 SWEP.HoldTypes =
 {
-	[ "normal" ] = {
+	[ "normal" ] =
+	{
 		[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE,
 		[ ACT_MP_WALK ] = ACT_HL2MP_WALK,
 		[ ACT_MP_RUN ] = ACT_HL2MP_RUN,
@@ -1323,7 +1323,8 @@ SWEP.HoldTypes =
 		[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE
 	},
 	
-	[ "pistol" ] = {
+	[ "pistol" ] =
+	{
 		[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PISTOL,
 		[ ACT_MP_WALK ] = ACT_HL2MP_WALK_PISTOL,
 		[ ACT_MP_RUN ] = ACT_HL2MP_RUN_PISTOL,
@@ -1339,7 +1340,8 @@ SWEP.HoldTypes =
 		[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE_PISTOL
 	},
 	
-	[ "fist" ] = {
+	[ "fist" ] =
+	{
 		[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_FIST,
 		[ ACT_MP_WALK ] = ACT_HL2MP_WALK_FIST,
 		[ ACT_MP_RUN ] = ACT_HL2MP_RUN_FIST,
@@ -1355,7 +1357,8 @@ SWEP.HoldTypes =
 		[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE_FIST
 	},
 	
-	[ "passive" ] = {
+	[ "passive" ] =
+	{
 		[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE_PASSIVE,
 		[ ACT_MP_WALK ] = ACT_HL2MP_WALK_PASSIVE,
 		[ ACT_MP_RUN ] = ACT_HL2MP_RUN_PASSIVE,
@@ -1372,7 +1375,7 @@ SWEP.HoldTypes =
 	}
 }
 
-SWEP.OverrideActivities =
+SWEP.DefaultActivities =
 {
 	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE,
 	[ ACT_MP_WALK ] = ACT_HL2MP_WALK,
@@ -1388,15 +1391,20 @@ SWEP.OverrideActivities =
 	[ ACT_MP_SWIM ] = ACT_HL2MP_SWIM,
 	[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE
 }
-	
 
-local ActTable = SWEP.OverrideActivities
+local ActTable = SWEP.DefaultActivities
 
 function SWEP:SetWeaponHoldType( t )
-	ActTable = self.HoldTypes[ t ] or self.OverrideActivities
+	t = string.lower( t )
+	ActTable = ( t == "normal" ) and self.DefaultActivities or self.HoldTypes[ t ]
+	
+	if ( not ActTable ) then
+		ErrorNoHalt( self:GetClass() .. ": Invalid holdtype set" )
+		ActTable = self.DefaultActivities
+	end
 end
 
-local DEBUG = true
+local DEBUG = true -- Fix
 
 function SWEP:TranslateActivity( act )
 	if ( DEBUG ) then
@@ -1416,17 +1424,4 @@ function SWEP:TranslateActivity( act )
 	end
 	
 	return ActTable[ act ] or -1 -- Fix; return -1 or just re-return the activity?
-end
-
-function SWEP:RegisterHoldType( name, acttable )
-	for parent, child in ipairs( self.OverrideActivities ) do -- Done at 3am; fix
-		if ( acttable[ child ] ) then
-			acttable[ parent ] = acttable[ child ]
-			acttable[ child ] = nil
-		end
-	end
-	
-	self.HoldTypes[ name ] = acttable
-	self:SetHoldType( name )
-	ActTable = acttable
 end

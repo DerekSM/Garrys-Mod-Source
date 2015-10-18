@@ -250,7 +250,7 @@ SWEP.Secondary =
 	Accuracy = 1.0,
 	Delay = 0.1,
 	ClipSize = WEAPON_NOCLIP,
-	DefaultClip = 0, -- Refer to the first comment
+	DefaultClip = 0,
 	Automatic = false
 }
 	
@@ -259,34 +259,50 @@ function SWEP:ObjectCaps()
 	return ( bit.bor( BaseClass.ObjectCaps( self ), FCAP_USE_IN_RADIUS ) )
 end
 
-SWEP.OverrideActivities =
-{
-	[ ACT_DOD_STAND_AIM ] = ACT_DOD_STAND_AIM,
-	[ ACT_DOD_CROUCH_AIM ] = ACT_DOD_CROUCH_AIM,
-	[ ACT_DOD_CROUCHWALK_AIM ] = ACT_DOD_CROUCHWALK_AIM,
-	[ ACT_DOD_WALK_AIM ] = ACT_DOD_WALK_AIM,
-	[ ACT_DOD_RUN_AIM ] = ACT_DOD_RUN_AIM,
-	[ ACT_PRONE_IDLE ] = ACT_PRONE_IDLE,
-	[ ACT_PRONE_FORWARD ] = ACT_PRONE_FORWARD,
-	[ ACT_MP_STAND_IDLE ] = ACT_DOD_STAND_IDLE,
-	[ ACT_MP_CROUCH_IDLE ] = ACT_DOD_CROUCH_IDLE,
-	[ ACT_MP_CROUCHWALK ] = ACT_DOD_CROUCHWALK_IDLE,
-	[ ACT_MP_WALK ] = ACT_DOD_WALK_IDLE,
-	[ ACT_MP_RUN ] = ACT_DOD_RUN_IDLE,
-	[ ACT_SPRINT ] = ACT_SPRINT, -- Fix; mp_sprint?
-	
-	[ ACT_RANGE_ATTACK1 ] = ACT_RANGE_ATTACK1,
-	[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_KNIFE, -- Fix
-	[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_CROUCH,
-	[ ACT_DOD_PRIMARYATTACK_PRONE ] = ACT_DOD_PRIMARYATTACK_PRONE,
-	[ ACT_RANGE_ATTACK2 ] = ACT_RANGE_ATTACK2,
-	[ ACT_DOD_SECONDARYATTACK_CROUCH ] = ACT_DOD_SECONDARYATTACK_CROUCH,
-	[ ACT_DOD_SECONDARYATTACK_PRONE ] = ACT_DOD_SECONDARYATTACK_PRONE,
-	
-	// Hand Signals
-	--[ ACT_DOD_HS_IDLE ] = ACT_DOD_HS_IDLE,
-	--[ ACT_DOD_HS_CROUCH ] = ACT_DOD_HS_CROUCH
-}
+if ( GS.AnimSet == "dod" ) then
+	ACT_DOD_STAND_IDLE_TOMMY = 665
+	ACT_DOD_PRONE_AIM_TOMMY = 664
+	ACT_DOD_SPRINT_IDLE_TOMMY = 670
+	ACT_DOD_CROUCHWALK_IDLE_TOMMY = 667
+	ACT_DOD_RUN_IDLE_TOMMY = 669
+	ACT_DOD_WALK_IDLE_TOMMY = 668
+	ACT_DOD_CROUCH_IDLE_TOMMY = 666
+	ACT_DOD_PRONEWALK_IDLE_TOMMY = 671
+	ACT_DOD_CROUCH_AIM_TOMMY = 660
+	ACT_DOD_CROUCHWALK_AIM_TOMMY = 661
+	ACT_DOD_STAND_AIM_TOMMY = 659
+	ACT_DOD_WALK_AIM_TOMMY = 662
+	ACT_DOD_RUN_AIM_TOMMY = 663
+
+	SWEP.DefaultActivities =
+	{
+		[ ACT_DOD_STAND_AIM ] = ACT_DOD_STAND_AIM,
+		[ ACT_DOD_CROUCH_AIM ] = ACT_DOD_CROUCH_AIM,
+		[ ACT_DOD_CROUCHWALK_AIM ] = ACT_DOD_CROUCHWALK_AIM,
+		[ ACT_DOD_WALK_AIM ] = ACT_DOD_WALK_AIM,
+		[ ACT_DOD_RUN_AIM ] = ACT_DOD_RUN_AIM,
+		[ ACT_PRONE_IDLE ] = ACT_PRONE_IDLE,
+		[ ACT_PRONE_FORWARD ] = ACT_PRONE_FORWARD,
+		[ ACT_MP_STAND_IDLE ] = ACT_DOD_STAND_IDLE,
+		[ ACT_MP_CROUCH_IDLE ] = ACT_DOD_CROUCH_IDLE,
+		[ ACT_MP_CROUCHWALK ] = ACT_DOD_CROUCHWALK_IDLE,
+		[ ACT_MP_WALK ] = ACT_DOD_WALK_IDLE,
+		[ ACT_MP_RUN ] = ACT_DOD_RUN_IDLE,
+		[ ACT_SPRINT ] = ACT_SPRINT, -- Fix; mp_sprint?
+		
+		[ ACT_RANGE_ATTACK1 ] = ACT_RANGE_ATTACK1,
+		[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_KNIFE, -- Fix
+		[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_CROUCH,
+		[ ACT_DOD_PRIMARYATTACK_PRONE ] = ACT_DOD_PRIMARYATTACK_PRONE,
+		[ ACT_RANGE_ATTACK2 ] = ACT_RANGE_ATTACK2,
+		[ ACT_DOD_SECONDARYATTACK_CROUCH ] = ACT_DOD_SECONDARYATTACK_CROUCH,
+		[ ACT_DOD_SECONDARYATTACK_PRONE ] = ACT_DOD_SECONDARYATTACK_PRONE,
+		
+		// Hand Signals
+		--[ ACT_DOD_HS_IDLE ] = ACT_DOD_HS_IDLE,
+		--[ ACT_DOD_HS_CROUCH ] = ACT_DOD_HS_CROUCH
+	}
+end
 
 function SWEP:GetWeaponID()
 	return self.ID
@@ -353,7 +369,7 @@ function SWEP:GetSecondaryDeathNoticeName() -- Fix
 	return "world"
 end
 
-function SWEP:GetMeleeActivity()
+function SWEP:GetMeleeActivity() -- Fix; replace
 	return ACT_VM_SECONDARYATTACK
 end
 
@@ -409,14 +425,14 @@ function SWEP:FindHullIntersection( vecSrc, tr, mins, maxs, pEntity )
 end
 
 function SWEP:Initialize()
+	BaseClass.Initialize( self )
+
 	self.m_bInAttack = false
 	self.m_iAltFireHint = 0
 end
 
 function SWEP:PlayEmptySound()
-	EmitSound( "Default.ClipEmpty_Rifle", self:GetPos(), self:EntIndex() ) -- Fix, add DOD soundscapes
-	
-	return false
+	self.Owner:EmitSound( "Default.ClipEmpty_Rifle" ) --, self:GetPos(), self:EntIndex() ) -- Fix, add DOD soundscapes
 end
 --[[
 function SWEP:SendWeaponAnim( iActivity )
@@ -450,7 +466,7 @@ function SWEP:Think()
 	
 	if ( not IsValid( pPlayer ) ) then return end
 	
-	--local m_bInReload = self:GetSequence() == ACT_VM_RELOAD
+	--local m_bInReload = self:GetSequence() == ACT_VM_RELOAD -- Fix
 	local flNextPrimaryAttack = self:GetNextPrimaryFire()
 	local flNextSecondaryAttack = self:GetNextSecondaryFire()
 	local flNextAttack = flNextPrimaryAttack < flNextSecondaryAttack and flNextPrimaryAttack or flNextSecondaryAttack
@@ -466,7 +482,7 @@ function SWEP:Think()
 		pPlayer:RemoveAmmo( j, self.Primary.Ammo )
 		
 		self.m_bInReload = false
-		self:SetSequence( ACT_VM_IDLE )
+		self:SetSequence( self:GetIdleActivity() )
 		
 		self:FinishReload()
 	end
@@ -523,16 +539,15 @@ function SWEP:WeaponIdle()
 	self:SetWeaponIdleTime( CurTime() + self:SequenceDuration() )
 end
 
-function SWEP:GetIdleActivity()
-	return ACT_VM_IDLE
-end
-
 function SWEP:Precache()
 	// precache base first, it loads weapon scripts
 	BaseClass.Precache( self )
 
 	util.PrecacheSound( "Default.ClipEmpty_Rifle" )
 end
+
+local SLEEVE_ALLIES = 0
+local SLEEVE_AXIS = 1
 
 function SWEP:DefaultDeploy( iActivity, szAnimExt )
 	local pOwner = self.Owner
@@ -564,16 +579,6 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 	return true
 end
 
--- Fix; temp
-SLEEVE_ALLIES = 0
-SLEEVE_AXIS = 1
-
---[[
-void CWeaponDODBase::SetWeaponModelIndex( const char *pName )
-{
- 	 m_iWorldModelIndex = modelinfo->GetModelIndex( pName );
-}
-]]
 function SWEP:CanBeSelected()
 	if ( not self:VisibleInWeaponSelection() ) then
 		return false
@@ -607,7 +612,7 @@ function SWEP:Holster( pSwitchingTo )
 		local pPlayer = self.Owner
 		
 		if ( IsValid( pPlayer ) ) then
-			pPlayer:SetFOV( 0, 0 ) // reset the default FOV -- Fix second argument/should it immidiately reset?
+			pPlayer:SetFOV( 0, 0 ) // reset the default FOV
 			
 			if ( self.m_iAltFireHint ) then
 				pPlayer:StopHintTimer( self.m_iAltFireHint )

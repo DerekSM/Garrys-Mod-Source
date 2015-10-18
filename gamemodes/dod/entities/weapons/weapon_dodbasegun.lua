@@ -117,18 +117,6 @@ function SWEP:Reload()
 	return true
 end
 
-function SWEP:GetPrimaryAttackActivity()
-	return ACT_VM_PRIMARYATTACK
-end
-
-function SWEP:GetReloadActivity()
-	return ACT_VM_RELOAD
-end
-
-function SWEP:GetDrawActivity()
-	return ACT_VM_DRAW -- Fix
-end
-
 function SWEP:IsSniperZoomed()
 	return self:GetZoomed()
 end

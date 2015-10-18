@@ -28,14 +28,16 @@ SWEP.PrintName = "#Weapon_Thompson" -- Fix?
 SWEP.bucket = 0
 SWEP.bucket_position = 1
 
-SWEP.Primary = {
+SWEP.Primary = 
+{
 	Ammo = "DOD_AMMO_SUBMG",
 	ClipSize = 30,
 	DefaultClip = 210, -- Fix? DefaultAmmoClips = 7; 30*7; check with actual in-game ammo values
 	Automatic = true
 }
 
-SWEP.Secondary = {
+SWEP.Secondary = 
+{
 	Ammo = "none",
 	ClipSize = -1,
 	DefaultClip = -1,
@@ -71,38 +73,44 @@ SWEP.AltWeaponID = WEAPON_THOMPSON_PUNCH
 
 -- Fix; check if in CDODFullAutoPunch weapons if we need to modify the activities to incorporate _EMPTY. The C96 seems to do this in its own file
 
-local acttable = {
-	[ ACT_DOD_STAND_AIM ] = ACT_DOD_STAND_AIM_TOMMY,
-	[ ACT_DOD_CROUCH_AIM ]		=			ACT_DOD_CROUCH_AIM_TOMMY,
-	[ ACT_DOD_CROUCHWALK_AIM ]	=			ACT_DOD_CROUCHWALK_AIM_TOMMY,
-	[ ACT_DOD_WALK_AIM ] =			ACT_DOD_WALK_AIM_TOMMY,
-	[ ACT_DOD_RUN_AIM ] =			ACT_DOD_RUN_AIM_TOMMY,				
-	[ ACT_PRONE_IDLE ] =				ACT_DOD_PRONE_AIM_TOMMY,			
-	[ ACT_PRONE_FORWARD ] =				ACT_DOD_PRONEWALK_IDLE_TOMMY,		
-	[ ACT_MP_STAND_IDLE ] =				ACT_DOD_STAND_IDLE_TOMMY,			
-	[ ACT_MP_CROUCH_IDLE ] =			ACT_DOD_CROUCH_IDLE_TOMMY,			
-	[ ACT_MP_CROUCHWALK ] =				ACT_DOD_CROUCHWALK_IDLE_TOMMY,			
-	[ ACT_MP_WALK ] =				ACT_DOD_WALK_IDLE_TOMMY,				
-	[ ACT_MP_RUN ] =						ACT_DOD_RUN_IDLE_TOMMY,				
-	[ ACT_SPRINT ] =				ACT_DOD_SPRINT_IDLE_TOMMY,				
-	
-	[ ACT_RANGE_ATTACK1 ] = ACT_DOD_PRIMARYATTACK_TOMMY,
-	[ ACT_DOD_PRIMARYATTACK_CROUCH ] = ACT_DOD_PRIMARYATTACK_TOMMY,
-	[ ACT_DOD_PRIMARYATTACK_PRONE ] = ACT_DOD_PRIMARYATTACK_PRONE_TOMMY,
-	[ ACT_RANGE_ATTACK2 ] =	ACT_DOD_SECONDARYATTACK_TOMMY,	
-	[ ACT_DOD_SECONDARYATTACK_CROUCH ] =	ACT_DOD_SECONDARYATTACK_CROUCH_TOMMY,	
-	[ ACT_DOD_SECONDARYATTACK_PRONE ] =		ACT_DOD_PRIMARYATTACK_PRONE_TOMMY,	
+SWEP.HoldType = "smg"
 
-	// Hand Signals
-	[ ACT_DOD_HS_IDLE ] =				ACT_DOD_HS_IDLE_TOMMY,
-	[ ACT_DOD_HS_CROUCH ] =				ACT_DOD_HS_CROUCH_TOMMY
-}
+if ( GS.AnimSet == "dod" ) then
 
-function SWEP:Initialize()
-	self:RegisterHoldType( "thompson", acttable )
-	
-	self.BaseClass.Initialize( self )
+	SWEP.HoldType = "thompson"
+
+	SWEP.HoldTypes = 
+	{
+		[ "thompson" ] = 
+		{
+			[ ACT_DOD_STAND_AIM ] = ACT_DOD_STAND_AIM_TOMMY,
+			[ ACT_DOD_CROUCH_AIM ]		=			ACT_DOD_CROUCH_AIM_TOMMY,
+			[ ACT_DOD_CROUCHWALK_AIM ]	=			ACT_DOD_CROUCHWALK_AIM_TOMMY,
+			[ ACT_DOD_WALK_AIM ] =			ACT_DOD_WALK_AIM_TOMMY,
+			[ ACT_DOD_RUN_AIM ] =			ACT_DOD_RUN_AIM_TOMMY,				
+			[ ACT_PRONE_IDLE ] =				ACT_DOD_PRONE_AIM_TOMMY,			
+			[ ACT_PRONE_FORWARD ] =				ACT_DOD_PRONEWALK_IDLE_TOMMY,		
+			[ ACT_MP_STAND_IDLE ] =				ACT_DOD_STAND_IDLE_TOMMY,			
+			[ ACT_MP_CROUCH_IDLE ] =			ACT_DOD_CROUCH_IDLE_TOMMY,			
+			[ ACT_MP_CROUCHWALK ] =				ACT_DOD_CROUCHWALK_IDLE_TOMMY,			
+			[ ACT_MP_WALK ] =				ACT_DOD_WALK_IDLE_TOMMY,				
+			[ ACT_MP_RUN ] =						ACT_DOD_RUN_IDLE_TOMMY,				
+			[ ACT_SPRINT ] =				ACT_DOD_SPRINT_IDLE_TOMMY,				
+			
+			[ ACT_RANGE_ATTACK1 ] = ACT_DOD_PRIMARYATTACK_TOMMY,
+			[ ACT_DOD_PRIMARYATTACK_CROUCH ] = ACT_DOD_PRIMARYATTACK_TOMMY,
+			[ ACT_DOD_PRIMARYATTACK_PRONE ] = ACT_DOD_PRIMARYATTACK_PRONE_TOMMY,
+			[ ACT_RANGE_ATTACK2 ] =	ACT_DOD_SECONDARYATTACK_TOMMY,	
+			[ ACT_DOD_SECONDARYATTACK_CROUCH ] =	ACT_DOD_SECONDARYATTACK_CROUCH_TOMMY,	
+			[ ACT_DOD_SECONDARYATTACK_PRONE ] =		ACT_DOD_PRIMARYATTACK_PRONE_TOMMY,	
+			
+			// Hand Signals
+			[ ACT_DOD_HS_IDLE ] =				ACT_DOD_HS_IDLE_TOMMY,
+			[ ACT_DOD_HS_CROUCH ] =				ACT_DOD_HS_CROUCH_TOMMY
+		}
+	}
 end
+
 --[[
 function SWEP:TranslateActivity(act)
 	return acttable[act] or -1
