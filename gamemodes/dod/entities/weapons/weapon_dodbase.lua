@@ -37,6 +37,10 @@ DOD_AMMO_RIFLEGRENADE_GER		= "DOD_AMMO_RIFLEGRENADE_GER"
 DOD_AMMO_RIFLEGRENADE_US_LIVE	= "DOD_AMMO_RIFLEGRENADE_US_LIVE"
 DOD_AMMO_RIFLEGRENADE_GER_LIVE	= "DOD_AMMO_RIFLEGRENADE_GER_LIVE"
 
+if ( SERVER ) then
+	util.AddNetworkString( "DOD - Clientside Deploy" )
+end
+
 CreateConVar( "friendlyfire", "0" )
 
 CROSSHAIR_CONTRACT_PIXELS_PER_SECOND = 7.0
@@ -259,50 +263,39 @@ function SWEP:ObjectCaps()
 	return ( bit.bor( BaseClass.ObjectCaps( self ), FCAP_USE_IN_RADIUS ) )
 end
 
-if ( GS.AnimSet == "dod" ) then
-	ACT_DOD_STAND_IDLE_TOMMY = 665
-	ACT_DOD_PRONE_AIM_TOMMY = 664
-	ACT_DOD_SPRINT_IDLE_TOMMY = 670
-	ACT_DOD_CROUCHWALK_IDLE_TOMMY = 667
-	ACT_DOD_RUN_IDLE_TOMMY = 669
-	ACT_DOD_WALK_IDLE_TOMMY = 668
-	ACT_DOD_CROUCH_IDLE_TOMMY = 666
-	ACT_DOD_PRONEWALK_IDLE_TOMMY = 671
-	ACT_DOD_CROUCH_AIM_TOMMY = 660
-	ACT_DOD_CROUCHWALK_AIM_TOMMY = 661
-	ACT_DOD_STAND_AIM_TOMMY = 659
-	ACT_DOD_WALK_AIM_TOMMY = 662
-	ACT_DOD_RUN_AIM_TOMMY = 663
+SWEP.ActTable =
+{
+	[ ACT_DOD_STAND_AIM ] = ACT_DOD_STAND_AIM,
+	[ ACT_DOD_CROUCH_AIM ] = ACT_DOD_CROUCH_AIM,
+	[ ACT_DOD_CROUCHWALK_AIM ] = ACT_DOD_CROUCHWALK_AIM,
+	[ ACT_DOD_WALK_AIM ] = ACT_DOD_WALK_AIM,
+	[ ACT_DOD_RUN_AIM ] = ACT_DOD_RUN_AIM,
+	[ ACT_PRONE_IDLE ] = ACT_PRONE_IDLE,
+	[ ACT_PRONE_FORWARD ] = ACT_PRONE_FORWARD,
+	[ ACT_MP_STAND_IDLE ] = ACT_DOD_STAND_IDLE,
+	[ ACT_MP_CROUCH_IDLE ] = ACT_DOD_CROUCH_IDLE,
+	[ ACT_MP_CROUCHWALK ] = ACT_DOD_CROUCHWALK_IDLE,
+	[ ACT_MP_WALK ] = ACT_DOD_WALK_IDLE,
+	[ ACT_MP_RUN ] = ACT_DOD_RUN_IDLE,
+	[ ACT_SPRINT ] = ACT_SPRINT, -- Fix; mp_sprint?
+	
+	[ ACT_RANGE_ATTACK1 ] = ACT_RANGE_ATTACK1,
+	[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_KNIFE, -- Fix
+	[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_CROUCH,
+	[ ACT_DOD_PRIMARYATTACK_PRONE ] = ACT_DOD_PRIMARYATTACK_PRONE,
+	[ ACT_RANGE_ATTACK2 ] = ACT_RANGE_ATTACK2,
+	[ ACT_DOD_SECONDARYATTACK_CROUCH ] = ACT_DOD_SECONDARYATTACK_CROUCH,
+	[ ACT_DOD_SECONDARYATTACK_PRONE ] = ACT_DOD_SECONDARYATTACK_PRONE,
+	
+	// Hand Signals
+	--[ ACT_DOD_HS_IDLE ] = ACT_DOD_HS_IDLE,
+	--[ ACT_DOD_HS_CROUCH ] = ACT_DOD_HS_CROUCH
+}
 
-	SWEP.DefaultActivities =
-	{
-		[ ACT_DOD_STAND_AIM ] = ACT_DOD_STAND_AIM,
-		[ ACT_DOD_CROUCH_AIM ] = ACT_DOD_CROUCH_AIM,
-		[ ACT_DOD_CROUCHWALK_AIM ] = ACT_DOD_CROUCHWALK_AIM,
-		[ ACT_DOD_WALK_AIM ] = ACT_DOD_WALK_AIM,
-		[ ACT_DOD_RUN_AIM ] = ACT_DOD_RUN_AIM,
-		[ ACT_PRONE_IDLE ] = ACT_PRONE_IDLE,
-		[ ACT_PRONE_FORWARD ] = ACT_PRONE_FORWARD,
-		[ ACT_MP_STAND_IDLE ] = ACT_DOD_STAND_IDLE,
-		[ ACT_MP_CROUCH_IDLE ] = ACT_DOD_CROUCH_IDLE,
-		[ ACT_MP_CROUCHWALK ] = ACT_DOD_CROUCHWALK_IDLE,
-		[ ACT_MP_WALK ] = ACT_DOD_WALK_IDLE,
-		[ ACT_MP_RUN ] = ACT_DOD_RUN_IDLE,
-		[ ACT_SPRINT ] = ACT_SPRINT, -- Fix; mp_sprint?
-		
-		[ ACT_RANGE_ATTACK1 ] = ACT_RANGE_ATTACK1,
-		[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_KNIFE, -- Fix
-		[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_DOD_PRIMARYATTACK_CROUCH,
-		[ ACT_DOD_PRIMARYATTACK_PRONE ] = ACT_DOD_PRIMARYATTACK_PRONE,
-		[ ACT_RANGE_ATTACK2 ] = ACT_RANGE_ATTACK2,
-		[ ACT_DOD_SECONDARYATTACK_CROUCH ] = ACT_DOD_SECONDARYATTACK_CROUCH,
-		[ ACT_DOD_SECONDARYATTACK_PRONE ] = ACT_DOD_SECONDARYATTACK_PRONE,
-		
-		// Hand Signals
-		--[ ACT_DOD_HS_IDLE ] = ACT_DOD_HS_IDLE,
-		--[ ACT_DOD_HS_CROUCH ] = ACT_DOD_HS_CROUCH
-	}
-end
+SWEP.HoldTypes =
+{
+	
+}
 
 function SWEP:GetWeaponID()
 	return self.ID
@@ -426,7 +419,7 @@ end
 
 function SWEP:Initialize()
 	BaseClass.Initialize( self )
-
+	
 	self.m_bInAttack = false
 	self.m_iAltFireHint = 0
 end
@@ -445,12 +438,12 @@ function SWEP:CanAttack()
 	return pPlayer:CanAttack()
 end
 
-CreateConVar( "cl_autoreload", "1" )
+local cl_autoreload = CreateConVar( "cl_autoreload", "1" )
 
 function SWEP:ShouldAutoReload()
 	local pPlayer = self.Owner
 	
-	return GetConVar( "cl_autoreload" ):GetBool() -- pPlayer:ShouldAutoReload() -- Fix
+	return cl_autoreload:GetBool() -- pPlayer:ShouldAutoReload() -- Fix
 end
 
 function SWEP:Think()
@@ -628,11 +621,15 @@ function SWEP:Holster( pSwitchingTo )
 end
 
 function SWEP:Deploy()
-	if ( not CLIENT ) then
+	if ( SERVER ) then
 		local pPlayer = self.Owner
 		
 		if ( IsValid( pPlayer ) ) then
 			pPlayer:SetFOV( 0, 0 )
+			self.ActTable = self:GetActTable( pPlayer.AnimSet == "dod" and self.AnimHoldType or self.HoldType )
+			
+			net.Start( "DOD - Clientside Deploy" )
+			net.Send( self.Owner )
 			
 			if ( self.m_iAltFireHint ) then
 				pPlayer:StartHintTimer( self.m_iAltFireHint )
@@ -642,6 +639,13 @@ function SWEP:Deploy()
 	
 	return BaseClass.Deploy( self )
 end
+
+net.Receive( "DOD - Clientside Deploy", function( len )
+	local SWEP = LocalPlayer():GetActiveWeapon()
+	if ( not IsValid( SWEP ) ) then return end
+	SWEP.ActTable = SWEP:GetActTable( SWEP.Owner.AnimSet == "dod" and SWEP.AnimHoldType or SWEP.HoldType )
+	
+end )
 
 if ( CLIENT ) then
 	

@@ -89,8 +89,6 @@ VECTOR_CONE_20DEGREES = Vector( 0.17365, 0.17365, 0.17365 )
 -- SubType
 
 -- Fix; temp placement
-GS = {}
-GS.AnimSet = "dod"
 
 SWEP.Primary =
 {
@@ -125,10 +123,25 @@ SWEP.ShootSounds = {
 	[ SPECIAL3 ] = ""
 }
 
+SWEP.ActTable =
+{
+	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE,
+	[ ACT_MP_WALK ] = ACT_HL2MP_WALK,
+	[ ACT_MP_RUN ] = ACT_HL2MP_RUN,
+	[ ACT_MP_CROUCH_IDLE ] = ACT_HL2MP_IDLE_CROUCH,
+	[ ACT_MP_CROUCHWALK ] = ACT_HL2MP_WALK_CROUCH,
+	[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK,
+	[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK,
+	[ ACT_MP_RELOAD_STAND ] = ACT_HL2MP_GESTURE_RELOAD,
+	[ ACT_MP_RELOAD_CROUCH ] = ACT_HL2MP_GESTURE_RELOAD,
+	[ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_SLAM, -- Fix
+	[ ACT_RANGE_ATTACK1 ] = ACT_HL2MP_GESTURE_RANGE_ATTACK, -- Fix
+	[ ACT_MP_SWIM ] = ACT_HL2MP_SWIM,
+	[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE
+}
+
 -- Mimics the Spawn method value reset
 function SWEP:Initialize()
-	self:SetHoldType( self.HoldType )
-	
 	-- Predictability is enabled by default on weapons. If I redo the animation prefix system, I will reenable manual prediction setting
 	-- self:SetPredictable( false )
 	
@@ -143,7 +156,7 @@ function SWEP:IsPredicted()
 end
 
 function SWEP:OnRemove()
-	-- We do nothing here since we don't override weapon constraints
+	-- We do nothing here since we don't override weapon constraints; fix
 end
 
 function SWEP:SetupDataTables()
@@ -673,6 +686,7 @@ function SWEP:DefaultDeploy( iActivity, szAnimExt )
 		self:SendWeaponAnim( iActivity )
 		
 		pOwner:SetNextAttack( CurTime() + self:SequenceDuration() )
+		-- ActTable = pOwner:TranslateActTable( self.ActTable )
 	end
 	
 	// Can't shoot again until we've finished deploying
@@ -788,7 +802,7 @@ if ( SERVER ) then
 	function SWEP:AcceptInput( name )
 		print( "CBaseCombatWeapon input: " .. name )
 		if ( name == "HideWeapon" and IsValid( self.Owner ) ) then
-			self:SetWeaponVisible()
+			self:SetWeaponVisible( false )
 		end
 	end
 end
@@ -938,6 +952,7 @@ function SWEP:WeaponSound( sound_type, soundtime )
 	
 	local params
 	-- Fix; do all this sound shit
+	self.Owner:EmitSound( shootsound )
 end
 
 function SWEP:StopWeaponSound( sound_type )
@@ -1296,7 +1311,7 @@ function SWEP:GetAnimPrefix()
 end
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-SWEP.HoldType = "normal"
+--SWEP.HoldType = "normal"
 
 ACT_HL2MP_SWIM = ACT_HL2MP_IDLE + 9 -- Fix; temp hack
 ACT_RANGE_ATTACK = ACT_HL2MP_IDLE + 8
@@ -1375,25 +1390,19 @@ SWEP.HoldTypes =
 	}
 }
 
-SWEP.DefaultActivities =
-{
-	[ ACT_MP_STAND_IDLE ] = ACT_HL2MP_IDLE,
-	[ ACT_MP_WALK ] = ACT_HL2MP_WALK,
-	[ ACT_MP_RUN ] = ACT_HL2MP_RUN,
-	[ ACT_MP_CROUCH_IDLE ] = ACT_HL2MP_IDLE_CROUCH,
-	[ ACT_MP_CROUCHWALK ] = ACT_HL2MP_WALK_CROUCH,
-	[ ACT_MP_ATTACK_STAND_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK,
-	[ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE ] = ACT_HL2MP_GESTURE_RANGE_ATTACK,
-	[ ACT_MP_RELOAD_STAND ] = ACT_HL2MP_GESTURE_RELOAD,
-	[ ACT_MP_RELOAD_CROUCH ] = ACT_HL2MP_GESTURE_RELOAD,
-	[ ACT_MP_JUMP ] = ACT_HL2MP_JUMP_SLAM, -- Fix
-	[ ACT_RANGE_ATTACK1 ] = ACT_HL2MP_GESTURE_RANGE_ATTACK, -- Fix
-	[ ACT_MP_SWIM ] = ACT_HL2MP_SWIM,
-	[ ACT_MP_SWIM_IDLE ] = ACT_HL2MP_SWIM_IDLE
-}
+function SWEP:GetActTable( HoldType )
+	print( "GetActTable" )
+	print( HoldType )
+	
+	if ( not self.HoldTypes[ HoldType ] ) then
+		print"FAILED!"
+		return {}
+	end
+	
+	return self.Owner:TranslateActTable( self.HoldTypes[ HoldType ] )
+end
 
-local ActTable = SWEP.DefaultActivities
-
+--[[
 function SWEP:SetWeaponHoldType( t )
 	t = string.lower( t )
 	ActTable = ( t == "normal" ) and self.DefaultActivities or self.HoldTypes[ t ]
@@ -1403,8 +1412,12 @@ function SWEP:SetWeaponHoldType( t )
 		ActTable = self.DefaultActivities
 	end
 end
+]]--
+--local DEBUG = true -- Fix
 
-local DEBUG = true -- Fix
+function SWEP:ActivityList()
+	return self.ActTable
+end
 
 function SWEP:TranslateActivity( act )
 	if ( DEBUG ) then
@@ -1418,10 +1431,10 @@ function SWEP:TranslateActivity( act )
 	if ( DEBUG ) then
 		local test = self.Owner:GetSequenceActivityName( self.Owner:SelectWeightedSequence( act ) )
 		-- Unregistered sequences
-		if not ActTable[ act ] and ( test ~= "Not Found!" and test ~= "ACT_GMOD_NOCLIP_LAYER" and test ~= "ACT_LAND" ) then
+		if not self.ActTable[ act ] and ( test ~= "Not Found!" and test ~= ACT_GMOD_NOCLIP_LAYER and test ~= ACT_LAND ) then
 			print( "BaseCombatWeapon: Unregistered sequence - " .. test )
 		end
 	end
-	
-	return ActTable[ act ] or -1 -- Fix; return -1 or just re-return the activity?
+	--return 665
+	return self.ActTable[ act ] or -1 -- Fix; return -1 or just re-return the activity?
 end

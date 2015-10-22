@@ -67,7 +67,7 @@ SWEP.ShootSounds = { -- Fix; unify shootsound tables
 
 SWEP.HoldType = "smg"
 
-if ( GS.AnimSet == "dod" ) then
+--if ( AnimSet == "dod" ) then
 
 	SWEP.HoldType = "c96"
 
@@ -102,7 +102,7 @@ if ( GS.AnimSet == "dod" ) then
 			[ ACT_DOD_HS_CROUCH ] = ACT_DOD_HS_CROUCH_MP44
 		}
 	}
-end
+--end
 
 function SWEP:GetIdleActivity()
 	local actIdle
