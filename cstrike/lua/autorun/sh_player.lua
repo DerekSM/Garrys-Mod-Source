@@ -232,14 +232,8 @@ function _R.Player:FireBullet( vecSrc, shootAngles, flSpread, flDistance, iPenet
 		info:SetDamage( fCurrentDamage )
 		info:SetDamageType( iDamageType )
 		info:CalculateBulletDamageForce( sBulletType, vecDir, tr.HitPos )
-		--[[
-		if tr.Entity:IsPlayer() then
-			hook.Run( "ScaleCSSPlayerDamage", tr.Entity, tr.HitGroup, info )
-		elseif tr.Entity:IsNPC() then
-			hook.Run( "ScaleCSSNPCDamage", tr.Entity, tr.HitGroup, info )
-		end]]
 			
-		if SERVER then
+		if ( SERVER ) then
 			tr.Entity:DispatchTraceAttack( info, tr )
 		end
 
@@ -371,109 +365,3 @@ end
 
 function _R.Player:ResetMaxSpeed( speed )
 end
-
--- Fix
---[[
-
-FLT_EPSILON = 1E-5
-
-function _R.Player:DecayPunchAngle()
-	local vPunchAngle = self:GetPunchAngle()
-
-	local len = math.sqrt( vPunchAngle.p * vPunchAngle.p + vPunchAngle.y * vPunchAngle.y + vPunchAngle.r * vPunchAngle.r )
-
-	local den = 1 / ( len + FLT_EPSILON )
-	vPunchAngle.p = vPunchAngle.p * den
-	vPunchAngle.y = vPunchAngle.y * den
-	vPunchAngle.r = vPunchAngle.r * den
-
-	len = len - ( ( 10 + len * 0.5 ) * FrameTime() )
-	len = math.max( len, 0 )
-
-	vPunchAngle = vPunchAngle * len
-
-	self:SetPunchAngle( vPunchAngle )
-end
-
-hook.Add( "Move", "PunchAngle", function( ply, mv )
-
-	if ( IsFirstTimePredicted() ) then
-		ply:DecayPunchAngle()
-	end]]
-		
-	--[[if ply:Alive() then
-
-		self:ReduceTimers( ply )
-		
-		local ground = ply:GetGroundEntity()
-		
-		if ground ~= NULL then
-			if ply:GetVelocityModifier() < 1.0 then
-				ply:SetVelocityModifier( ply:GetVelocityModifier() + FrameTime() / 3.0 )
-			elseif ply:GetVelocityModifier() > 1.0 then
-				ply:SetVelocityModifier( 1.0 )
-			end
-
-			if ply:GetStamina() > 0 then
-				local flRatio = ( STAMINA_MAX - ( ( ply:GetStamina() / 1000.0 ) * STAMINA_RECOVER_RATE ) ) / STAMINA_MAX
-
-				local flReferenceFrametime = 1.0 / 70.0
-				local flFrametimeRatio = FrameTime() / flReferenceFrametime
-
-				flRatio = math.pow( flRatio, flFrametimeRatio )
-
-				local vel = mv:GetVelocity()
-				vel.x = vel.x * flRatio
-				vel.y = vel.y * flRatio
-				mv:SetVelocity( vel )
-			end
-		end
-		
-		local maxspeed = 250
-		
-		local weap = ply:GetActiveWeapon()
-		if IsValid( weap ) and weap.GetMaxSpeed then
-			maxspeed = weap:GetMaxSpeed()
-		end
-		
-		if bit.band( mv:GetButtons(), IN_DUCK ) > 0 then
-			maxspeed = maxspeed * ply:GetCrouchedWalkSpeed()
-		end
-		
-		if not ply:CanMove() then
-			maxspeed = 0
-		end
-		
-		mv:SetMaxSpeed( maxspeed * ply:GetVelocityModifier() )
-
-	end
-end )]]
-
---[[
-if ( SERVER ) then
-	hook.Add( "FinishMove", "CStrike - Direction", function( ply, mv ) -- Fix; temp hack
-		if ( mv:GetForwardSpeed() > 0 ) then
-			ply.m_iDirection = 1
-		elseif ( mv:GetForwardSpeed() == 0 ) then
-			ply.m_iDirection = 0
-		else
-			ply.m_iDirection = -1
-		end
-	end )
-end]]
---[[
-if ( SERVER ) then
-hook.Add( "Think", "Teststs", function()
-	local ply = Entity(1):GetPhysicsObject()
-	if not IsValid( ply ) then print"lel" return end
-	--[[local fwd,vel = ply:GetAngles():Forward(),ply:GetVelocity()
-	vel.z = 0
-	
-	if ( math.acos(fwd:Dot(vel)/(fwd:Length()*vel:Length())) <= ((50*math.pi)/180) ) then
-	if ( ply:WorldToLocal( ply:GetVelocity() ) ) then
-		Entity(1):ChatPrint( "forward" )
-	else
-		Entity(1):ChatPrint( "not" )
-	end
-end )
-end]]
